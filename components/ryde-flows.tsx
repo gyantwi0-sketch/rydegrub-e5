@@ -31,6 +31,7 @@ import { useRyde } from "./ryde-store";
 import { EmptyState, FoodImage, Stepper } from "./food-components";
 import type { PageName } from "./ryde-app";
 import { cn } from "@/lib/utils";
+import { ProfileMedia } from "./profile-media";
 type Navigate = (page: PageName, id?: string) => void;
 function PageHeading({
   eyebrow,
@@ -621,6 +622,7 @@ export function ProfilePage() {
         title="A little about you."
         description="Your name, phone, and orders last only until refresh. Cart and food preferences stay in this browser."
       />
+      <ProfileMedia />
       <form
         className="panel"
         onSubmit={(e) => {
@@ -700,3 +702,5 @@ export function ProfilePage() {
     </section>
   );
 }
+
+
