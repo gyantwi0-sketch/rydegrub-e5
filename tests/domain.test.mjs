@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   categories,
   orderStatus,
+  prepareReorder,
   products,
   statuses,
   totals,
@@ -50,4 +51,34 @@ test("demo order status advances at fifteen-second boundaries", () => {
   assert.equal(orderStatus(createdAt, createdAt + 59_999), 3);
   assert.equal(orderStatus(createdAt, createdAt + 60_000), 4);
   assert.equal(orderStatus(createdAt, createdAt + 600_000), 4);
+});
+
+test("reorder uses current prices and flags changed allergen information", () => {
+  const previous = { ...products[0], price: 99, allergens: "None known" };
+  const result = prepareReorder([{ product: previous, quantity: 2 }]);
+  assert.deepEqual(result.cart, { thali: 2 });
+  assert.equal(result.subtotal, 378);
+  assert.ok(result.lines[0].changes.some((change) => change.startsWith("Price:")));
+  assert.ok(result.lines[0].changes.some((change) => change.startsWith("Allergens:")));
+});
+
+test("reorder excludes removed products without silently replacing them", () => {
+  const previous = { ...products[0], id: "discontinued", name: "Old meal" };
+  const result = prepareReorder([{ product: previous, quantity: 1 }]);
+  assert.deepEqual(result.cart, {});
+  assert.equal(result.subtotal, 0);
+  assert.deepEqual(result.lines[0].changes, ["No longer available"]);
+});
+
+test("reorder rejects invalid quantities and caps duplicate IDs", () => {
+  const product = products[0];
+  const result = prepareReorder([
+    { product, quantity: -1 },
+    { product, quantity: 60 },
+    { product, quantity: 50 },
+  ]);
+  assert.deepEqual(result.cart, { thali: 60 });
+  assert.equal(result.subtotal, 60 * product.price);
+  assert.ok(result.lines[0].changes.includes("Invalid quantity"));
+  assert.ok(result.lines[2].changes.includes("Quantity exceeds the per-item limit"));
 });
