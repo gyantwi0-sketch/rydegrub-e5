@@ -22,6 +22,7 @@ import {
   journey,
   money,
   orderStatus,
+  prepareReorder,
   products,
   statuses,
   totals,
@@ -31,6 +32,12 @@ import { useRyde } from "./ryde-store";
 import { EmptyState, FoodImage, Stepper } from "./food-components";
 import type { PageName } from "./ryde-app";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 type Navigate = (page: PageName, id?: string) => void;
 function PageHeading({
   eyebrow,
@@ -378,18 +385,50 @@ function useNow() {
 }
 function useReorder(navigate: Navigate) {
   const { setState, notify } = useRyde();
-  return (order: Order) => {
-    setState((s) => ({
-      ...s,
-      cart: order.items.reduce(
-        (c, i) => ({ ...c, [i.product.id]: i.quantity }),
-        {},
-      ),
-      selected: true,
-    }));
-    notify("Your favourites are back in the cart.");
+  const [pending, setPending] = useState<Order | null>(null);
+  const preview = pending ? prepareReorder(pending.items) : null;
+  const confirm = () => {
+    if (!pending) return;
+    // Re-read the catalog when confirming, not just when opening the preview.
+    const current = prepareReorder(pending.items);
+    if (!Object.keys(current.cart).length) return;
+    setState((s) => ({ ...s, cart: current.cart, selected: true }));
+    setPending(null);
+    notify("Cart updated with the current menu. Review it before checkout.");
     navigate("cart");
   };
+  const dialog = (
+    <Dialog open={pending !== null} onOpenChange={(open) => !open && setPending(null)}>
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+        <DialogTitle>Review this reorder</DialogTitle>
+        <DialogDescription>
+          Prices and food details can change. Only items on the current demo menu
+          will go into your cart. This replaces your existing cart.
+        </DialogDescription>
+        <ul className="reorder-preview">
+          {preview?.lines.map((line, index) => (
+            <li key={`${line.previous.id}-${index}`}>
+              <strong>{line.quantity} × {line.current?.name ?? line.previous.name}</strong>
+              <span>{line.current ? money(line.current.price) + " each" : "Unavailable"}</span>
+              {line.changes.length > 0 && (
+                <ul>
+                  {line.changes.map((change) => <li key={change}>{change}</li>)}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
+        <p>Current item subtotal: <strong>{money(preview?.subtotal ?? 0)}</strong>. Delivery is calculated in the cart.</p>
+        <div className="reorder-actions">
+          <button className="secondary" onClick={() => setPending(null)}>Cancel</button>
+          <button className="primary" disabled={!preview || !Object.keys(preview.cart).length} onClick={confirm}>
+            Replace cart with available items
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+  return { reorder: setPending, dialog };
 }
 export function TrackingPage({
   id,
@@ -401,7 +440,7 @@ export function TrackingPage({
   const { state, ready } = useRyde();
   const now = useNow();
   const order = state.orders.find((o) => o.id === id);
-  const reorder = useReorder(navigate);
+  const { reorder, dialog: reorderDialog } = useReorder(navigate);
   if (!ready) return <p className="page-section">Loading order…</p>;
   if (!order)
     return (
@@ -415,6 +454,7 @@ export function TrackingPage({
   const status = orderStatus(order.createdAt, now);
   return (
     <section className="page-section">
+      {reorderDialog}
       <PageHeading
         eyebrow="YOUR FOOD IS ON ITS WAY"
         title={
@@ -534,9 +574,10 @@ function OrderSummary({ order }: { order: Order }) {
 export function OrdersPage({ navigate }: { navigate: Navigate }) {
   const { state } = useRyde();
   const now = useNow();
-  const reorder = useReorder(navigate);
+  const { reorder, dialog: reorderDialog } = useReorder(navigate);
   return (
     <section className="page-section">
+      {reorderDialog}
       <PageHeading
         eyebrow="YOUR DELICIOUS LITTLE HISTORY"
         title="Meals along the way."
