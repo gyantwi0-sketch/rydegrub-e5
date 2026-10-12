@@ -30,7 +30,7 @@ export function ProfileMedia() {
   }
   return <section className="panel" aria-label="Profile photo">
     <h2>Profile photo</h2>
-    {photo && <img src={photo.thumbnail} width={96} height={96} alt="Your profile photo" />}
+    {photo && <img src={photo.thumbnail} width={96} height={96} alt="Your uploaded portrait" />}
     <p className="muted small">Private photo · JPEG, PNG or WebP · up to 5 MiB · still images, 64–4096 pixels per side. Photos expire after 30 days.</p>
     <label className="form-field">
       <span>{busy ? 'Saving changes…' : photo ? 'Replace photo' : 'Choose photo'}</span>
