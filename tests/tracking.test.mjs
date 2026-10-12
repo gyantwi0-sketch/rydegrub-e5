@@ -144,9 +144,12 @@ test('stalled token request is cancelled without treating partial bytes as a cre
 test('rate limits persist across workers and forged forwarded IPs do not bypass global admission', async t => {
   const { store, api, root, order } = fixture(t);
   const worker = new TrackingStore(root);
+  const now = Date.now();
+  const limit = store.limit.bind(store);
+  store.limit = (bucket, maximum) => limit(bucket, maximum, now);
   try {
     for (let i = 0; i < 5; i++) store.limit(`issue:${alice}`, 5);
-    assert.throws(() => worker.limit(`issue:${alice}`, 5), { status: 429 });
+    assert.throws(() => worker.limit(`issue:${alice}`, 5, now), { status: 429 });
     assert.equal((await api.issueCode(request({ method: 'POST' }), order.id)).status, 429);
     for (let i = 1; i < 600; i++) store.limit('global', 600);
     const response = await api.read(request({ headers: { 'x-forwarded-for': '10.20.30.40' } }), order.id);

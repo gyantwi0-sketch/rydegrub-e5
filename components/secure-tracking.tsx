@@ -59,8 +59,7 @@ export function TrackingPage({ id, navigate }: { id: string; navigate: Navigate 
   const [isOwner, setOwner] = useState(false);
   const [message, setMessage] = useState('Checking tracking access…');
   const [entry, setEntry] = useState('');
-  const [code, setCode] = useState<string | null>(null);
-  const [attempt, setAttempt] = useState(0);
+  const [code, setCode] = useState<{ token: string } | null>(null);
   const [issued, setIssued] = useState<{ token: string; expiresAt: number } | null>(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
@@ -71,7 +70,7 @@ export function TrackingPage({ id, navigate }: { id: string; navigate: Navigate 
       try {
         const response = await fetch(`/api/orders/${id}/tracking`, {
           cache: 'no-store', signal: controller.signal,
-          ...(code ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: code }) } : {}),
+          ...(code ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(code) } : {}),
         });
         if (!response.ok) throw new Error('Tracking is unavailable. Sign in as the owner or ask for a new tracking code.');
         const body = await response.json();
@@ -88,7 +87,7 @@ export function TrackingPage({ id, navigate }: { id: string; navigate: Navigate 
     setSnapshot(null); setOwner(false); setIssued(null);
     void refresh();
     return () => { controller.abort(); clearTimeout(timer); };
-  }, [id, code, attempt]);
+  }, [id, code]);
   useEffect(() => {
     if (!issued) return;
     const timer = setTimeout(() => setIssued(null), Math.max(0, issued.expiresAt - Date.now()));
@@ -115,7 +114,7 @@ export function TrackingPage({ id, navigate }: { id: string; navigate: Navigate 
       <p className="muted small">Updated {new Date(snapshot.updatedAt).toLocaleString()}</p>
     </section>}
     {!isOwner && <form className="panel" onSubmit={event => {
-      event.preventDefault(); setCode(entry.trim()); setEntry(''); setAttempt(value => value + 1);
+      event.preventDefault(); setCode({ token: entry.trim() }); setEntry('');
     }}>
       <label className="form-field">
         <span>Tracking code shared by the order owner</span>
