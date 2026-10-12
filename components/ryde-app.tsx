@@ -41,14 +41,16 @@ import {
   CheckoutPage,
   OrdersPage,
   ProfilePage,
-  TrackingPage,
+  DemoTrackingPage,
 } from "./ryde-flows";
+import { TrackingPage } from "./secure-tracking";
 export type PageName =
   | "home"
   | "menu"
   | "cart"
   | "checkout"
   | "tracking"
+  | "demo-tracking"
   | "orders"
   | "profile"
   | "signin"
@@ -86,6 +88,7 @@ function App() {
           "cart",
           "checkout",
           "tracking",
+          "demo-tracking",
           "orders",
           "profile",
           "signin",
@@ -183,7 +186,10 @@ function App() {
         {page === "cart" && <CartPage navigate={navigate} />}
         {page === "checkout" && <CheckoutPage navigate={navigate} />}
         {page === "tracking" && (
-          <TrackingPage id={orderId} navigate={navigate} />
+          <TrackingPage key={orderId} id={orderId} navigate={navigate} />
+        )}
+        {page === "demo-tracking" && (
+          <DemoTrackingPage id={orderId} navigate={navigate} />
         )}
         {page === "orders" && <OrdersPage navigate={navigate} />}
         {page === "profile" && <ProfilePage />}

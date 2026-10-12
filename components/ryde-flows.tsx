@@ -39,6 +39,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ProfileMedia } from "./profile-media";
+import { SecureOrders } from "./secure-tracking";
 type Navigate = (page: PageName, id?: string) => void;
 function PageHeading({
   eyebrow,
@@ -235,7 +236,7 @@ export function CheckoutPage({ navigate }: { navigate: Navigate }) {
       },
     };
     setState((s) => ({ ...s, orders: [order, ...s.orders], cart: {} }));
-    navigate("tracking", order.id);
+    navigate("demo-tracking", order.id);
   };
   if (!ready)
     return <section className="page-section">Loading your journey…</section>;
@@ -431,7 +432,7 @@ function useReorder(navigate: Navigate) {
   );
   return { reorder: setPending, dialog };
 }
-export function TrackingPage({
+export function DemoTrackingPage({
   id,
   navigate,
 }: {
@@ -584,6 +585,8 @@ export function OrdersPage({ navigate }: { navigate: Navigate }) {
         title="Meals along the way."
         description="Your demo orders for this visit. They disappear when you refresh."
       />
+      <SecureOrders navigate={navigate} />
+      <h2>Demo orders for this visit</h2>
       {!state.orders.length ? (
         <EmptyState
           title="Your first stop is a tasty one."
@@ -625,7 +628,7 @@ export function OrdersPage({ navigate }: { navigate: Navigate }) {
                   <div>
                     <button
                       className="secondary"
-                      onClick={() => navigate("tracking", o.id)}
+                      onClick={() => navigate("demo-tracking", o.id)}
                     >
                       {status === 4 ? "View details" : "Track order"}
                       <ArrowRight size={15} />
@@ -743,5 +746,3 @@ export function ProfilePage() {
     </section>
   );
 }
-
-
