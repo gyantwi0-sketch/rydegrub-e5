@@ -407,7 +407,7 @@ export function TrackingPage({
     return (
       <EmptyState
         title="No order on this track."
-        description="Find your recent demo orders or start a new food journey."
+        description="Demo orders disappear when you refresh. Start a new food journey."
         action="View orders"
         onAction={() => navigate("orders")}
       />
@@ -540,7 +540,7 @@ export function OrdersPage({ navigate }: { navigate: Navigate }) {
       <PageHeading
         eyebrow="YOUR DELICIOUS LITTLE HISTORY"
         title="Meals along the way."
-        description="Your active and past demo orders, all in one place."
+        description="Your demo orders for this visit. They disappear when you refresh."
       />
       {!state.orders.length ? (
         <EmptyState
@@ -619,7 +619,7 @@ export function ProfilePage() {
       <PageHeading
         eyebrow="MAKE THE JOURNEY YOURS"
         title="A little about you."
-        description="Your details and food preferences, saved only in this browser."
+        description="Your name, phone, and orders last only until refresh. Cart and food preferences stay in this browser."
       />
       <form
         className="panel"
@@ -634,7 +634,7 @@ export function ProfilePage() {
             ...s,
             profile: { name: name.trim(), mobile, preferences },
           }));
-          notify("Your profile and preferences are saved.");
+          notify("Preferences saved. Contact details last until refresh.");
         }}
       >
         <div className="profile-avatar">
