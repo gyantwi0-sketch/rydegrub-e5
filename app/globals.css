@@ -2660,6 +2660,34 @@
 }
 
 /* Sign in / sign up (UI demo) */
+.reorder-preview {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+.reorder-preview > li {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  display: grid;
+  gap: 5px;
+}
+.reorder-preview > li > span {
+  color: var(--muted-foreground);
+}
+.reorder-preview ul {
+  padding-left: 18px;
+  color: #ffd0ad;
+  line-height: 1.5;
+}
+.reorder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
 .header-signin {
   display: flex;
   align-items: center;
