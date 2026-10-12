@@ -21,7 +21,11 @@ import {
   Sandwich,
   Wheat,
   CookingPot,
+  Baby,
+  Apple,
+  LogIn,
 } from "lucide-react";
+import { SignInPage, SignUpPage } from "./auth-forms";
 import {
   categories,
   products,
@@ -40,7 +44,15 @@ import {
   TrackingPage,
 } from "./ryde-flows";
 export type PageName =
-  "home" | "menu" | "cart" | "checkout" | "tracking" | "orders" | "profile";
+  | "home"
+  | "menu"
+  | "cart"
+  | "checkout"
+  | "tracking"
+  | "orders"
+  | "profile"
+  | "signin"
+  | "signup";
 const navigation = [
   { id: "home", label: "Home", icon: Home },
   { id: "menu", label: "Menu", icon: UtensilsCrossed },
@@ -55,6 +67,8 @@ const categoryIcons = [
   Leaf,
   Sandwich,
   Coffee,
+  Baby,
+  Apple,
 ];
 function App() {
   const { state, ready, notice } = useRyde();
@@ -74,6 +88,8 @@ function App() {
           "tracking",
           "orders",
           "profile",
+          "signin",
+          "signup",
         ].includes(p)
       ) {
         setPage(p as PageName);
@@ -125,6 +141,17 @@ function App() {
               Demo mode
             </span>
             <button
+              className={cn(
+                "header-signin",
+                ["signin", "signup"].includes(page) && "active",
+              )}
+              onClick={() => navigate("signin")}
+              aria-label="Sign in"
+            >
+              <LogIn size={17} />
+              <span>Sign in</span>
+            </button>
+            <button
               className="header-cart"
               onClick={() => navigate("cart")}
               aria-label={`Cart with ${count} items`}
@@ -160,6 +187,8 @@ function App() {
         )}
         {page === "orders" && <OrdersPage navigate={navigate} />}
         {page === "profile" && <ProfilePage />}
+        {page === "signin" && <SignInPage navigate={navigate} />}
+        {page === "signup" && <SignUpPage navigate={navigate} />}
       </main>
       <footer className="site-footer">
         <span>
@@ -180,7 +209,7 @@ function App() {
           </button>
         ))}
       </nav>
-      {count > 0 && !["cart", "checkout"].includes(page) && (
+      {count > 0 && !["cart", "checkout", "signin", "signup"].includes(page) && (
         <button className="floating-cart" onClick={() => navigate("cart")}>
           <span>
             <ShoppingBag size={19} />
@@ -234,6 +263,7 @@ function HomePage({
     notify("Demo journey selected. Your next stop: good food.");
   };
   const picks = products
+    .filter((p) => !["Toddler Food", "Fruits"].includes(p.category))
     .filter((p) =>
       state.profile.preferences.length
         ? state.profile.preferences.every((t) => p.tags.includes(t))
@@ -464,7 +494,7 @@ function MenuPage({
           <h1>The onboard menu.</h1>
           <p>Made with care. Delivered to your seat.</p>
         </div>
-        <span className="subtle-pill">12 freshly picked favourites</span>
+        <span className="subtle-pill">{products.length} freshly picked favourites</span>
       </div>
       <div className="menu-controls">
         <label className="search-box">

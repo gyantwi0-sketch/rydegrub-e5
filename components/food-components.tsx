@@ -19,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { money, type Product } from "@/lib/rydegrub";
+import { money, PACK_NOTE, type Product } from "@/lib/rydegrub";
 import { useRyde } from "./ryde-store";
 export function FoodImage({
   product,
@@ -109,7 +109,11 @@ export function FoodCard({
           </span>
           <button onClick={() => onOpen(product)}>{product.name}</button>
         </div>
+        {product.age && (
+          <span className="age-pill">Age {product.age}</span>
+        )}
         <p>{product.description}</p>
+        {product.packaged && <small className="pack-note">{PACK_NOTE}</small>}
         <div className="food-card-bottom">
           <strong>{money(product.price)}</strong>
           {n ? (
@@ -122,6 +126,7 @@ export function FoodCard({
             <button
               className="add-button"
               disabled={!ready}
+              aria-label={`Add ${product.name} to cart`}
               onClick={() => {
                 quantity(product.id, 1);
                 notify(`${product.name} added to your cart`);
@@ -160,11 +165,13 @@ export function ProductDetails({
             <FoodImage product={product} className="detail-image" />
             <DialogHeader>
               <span className="eyebrow">
-                {product.veg ? "VEGETARIAN" : "NON-VEGETARIAN"} · FRESHLY
-                PREPARED
+                {product.veg ? "VEGETARIAN" : "NON-VEGETARIAN"} ·{" "}
+                {product.packaged ? "SEALED PACK" : "FRESHLY PREPARED"}
+                {product.age && ` · AGE ${product.age.toUpperCase()}`}
               </span>
               <DialogTitle>{product.name}</DialogTitle>
               <DialogDescription>{product.description}</DialogDescription>
+              {product.packaged && <p className="pack-note">{PACK_NOTE}</p>}
             </DialogHeader>
             <div className="detail-meta">
               <span>
