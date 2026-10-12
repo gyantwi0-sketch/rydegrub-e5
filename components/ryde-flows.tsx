@@ -655,7 +655,7 @@ export function ProfilePage() {
       setMobile(state.profile.mobile);
       setPreferences(state.profile.preferences);
     }
-  }, [ready]);
+  }, [ready, state.profile.name, state.profile.mobile, state.profile.preferences]);
   return (
     <section className="page-section profile-page">
       <PageHeading
