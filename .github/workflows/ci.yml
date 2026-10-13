@@ -22,6 +22,17 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm audit --audit-level high
+      - name: Generate CycloneDX dependency SBOM
+        run: pnpm sbom --sbom-format cyclonedx --lockfile-only --out sbom.cdx.json
+      - name: Verify dependency SBOM
+        run: node scripts/verify-sbom.mjs sbom.cdx.json
+      - name: Retain SBOM for security review
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-sbom
+          path: sbom.cdx.json
+          if-no-files-found: error
+          retention-days: 14
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm typecheck
