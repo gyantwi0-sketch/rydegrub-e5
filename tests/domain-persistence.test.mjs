@@ -78,7 +78,7 @@ test('inactive products and changed availability fail closed before new drafts',
   const { vendorId, journeyId } = seeded(db);
   const { version } = db.replaceCart(OWNER_A, 0, [{ sku: 'veg-thali', quantity: 1 }]);
   db.putProduct({ sku: 'veg-thali', vendorId, name: 'Veg Thali', pricePaise: 19900, active: false });
-  assert.throws(() => db.createDraftOrder(OWNER_A, journeyId, version), { status: 409 });
+  assert.throws(() => db.createDraftOrder(OWNER_A, journeyId, version, randomUUID()), { status: 409 });
   assert.throws(() => db.replaceCart(OWNER_A, version, [{ sku: 'veg-thali', quantity: 1 }]), { status: 409 });
   assert.equal(db.readCart(OWNER_A).version, version);
 });
