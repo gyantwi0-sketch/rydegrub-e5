@@ -1,7 +1,6 @@
 "use client";
 import { createContext,useContext,useEffect,useState,type ReactNode } from "react";
-import type { Product } from "@/lib/rydegrub";
-import type { Cart,Order,Profile } from "@/lib/rydegrub";
+import type { Product, Cart, Order, Profile } from "@/lib/rydegrub";
 type State={cart:Cart;selected:boolean;orders:Order[];profile:Profile};
 const initial:State={cart:{},selected:false,orders:[],profile:{name:"",mobile:"",preferences:[]}};
 const Context=createContext<null|{state:State;products:Product[];categories:string[];ready:boolean;notice:string;setState:React.Dispatch<React.SetStateAction<State>>;quantity:(id:string,n:number)=>void;notify:(s:string)=>void}>(null);
