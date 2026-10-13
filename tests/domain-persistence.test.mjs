@@ -32,7 +32,7 @@ function seeded(db) {
 
 test('schema migrates transactionally with FK protection and persists across restart', t => {
   const { db, dir } = fixture(t);
-  assert.equal(db.db.prepare('PRAGMA user_version').get().user_version, 2);
+  assert.equal(db.db.prepare('PRAGMA user_version').get().user_version, 3);
   assert.equal(db.db.prepare('PRAGMA foreign_keys').get().foreign_keys, 1);
   const tables = db.db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(r => r.name);
   for (const table of ['accounts','stations','vendors','catalog','journeys','carts',
@@ -61,15 +61,15 @@ test('owner-scoped cart, current authoritative price and optimistic version', t 
     [{ sku: 'veg-thali', quantity: 1 }, { sku: 'veg-thali', quantity: 1 }],
   ]) assert.throws(() => db.replaceCart(OWNER_A, 1, bad));
   assert.equal(db.readCart(OWNER_A).version, 1);
-  const draft = db.createDraftOrder(OWNER_A, journeyId, 1);
+  const draft = db.createDraftOrder(OWNER_A, journeyId, 1, randomUUID());
   assert.equal(draft.subtotalPaise, 25800);
   assert.equal(draft.status, 'draft');
   const read = db.readDraft(OWNER_A, draft.id);
   assert.deepEqual(read.items.map(x => [x.sku,x.quantity,x.unitPaise]), [['veg-thali',2,12900]]);
   assert.throws(() => db.readDraft(OWNER_B, draft.id), { status: 404 });
-  assert.throws(() => db.createDraftOrder(OWNER_B, journeyId, 1), { status: 404 });
+  assert.throws(() => db.createDraftOrder(OWNER_B, journeyId, 1, randomUUID()), { status: 404 });
   db.putProduct({ sku: 'veg-thali', vendorId, name: 'Veg Thali', pricePaise: 15000, active: true });
-  const second = db.createDraftOrder(OWNER_A, journeyId, 1);
+  const second = db.createDraftOrder(OWNER_A, journeyId, 1, randomUUID());
   assert.equal(second.subtotalPaise, 30000);
   assert.equal(db.readDraft(OWNER_A, draft.id).subtotalPaise, 25800);
 });
@@ -78,7 +78,7 @@ test('inactive products and changed availability fail closed before new drafts',
   const { vendorId, journeyId } = seeded(db);
   const { version } = db.replaceCart(OWNER_A, 0, [{ sku: 'veg-thali', quantity: 1 }]);
   db.putProduct({ sku: 'veg-thali', vendorId, name: 'Veg Thali', pricePaise: 19900, active: false });
-  assert.throws(() => db.createDraftOrder(OWNER_A, journeyId, version), { status: 409 });
+  assert.throws(() => db.createDraftOrder(OWNER_A, journeyId, version, randomUUID()), { status: 409 });
   assert.throws(() => db.replaceCart(OWNER_A, version, [{ sku: 'veg-thali', quantity: 1 }]), { status: 409 });
   assert.equal(db.readCart(OWNER_A).version, version);
 });

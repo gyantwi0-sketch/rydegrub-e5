@@ -24,7 +24,7 @@ function fixture(t) {
     pnrDigest, trainNo: '12952', origin: 'NDLS', destination: 'KOTA',
   });
   db.replaceCart(owner, 0, [{ sku: 'meal', quantity: 2 }]);
-  const draft = db.createDraftOrder(owner, journeyId, 1);
+  const draft = db.createDraftOrder(owner, journeyId, 1, randomUUID());
   return { db, draft };
 }
 const paymentEvent = (paymentId, expectedVersion, nextState, providerRefDigest = 'c'.repeat(64)) =>
