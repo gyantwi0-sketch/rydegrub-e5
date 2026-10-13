@@ -1,5 +1,5 @@
 "use client";
-import { useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
   ArrowRight,
   Eye,
@@ -117,8 +117,7 @@ function AuthShell({
         <div className="auth-demo-note" role="note">
           <Info size={15} />
           <span>
-            <strong>UI demo only.</strong> No account is created and passwords
-            are never saved or sent.
+            <strong>Secure account access.</strong> Verify your email before using account features.
           </span>
         </div>
         <h2>{title}</h2>
@@ -138,19 +137,22 @@ function AuthShell({
 function useAuthForm<T extends Record<string, string>>(
   initial: T,
   validate: (values: T) => Errors,
-  onValid: () => void,
+  onValid: (values: T) => Promise<void>,
 ) {
   const [values, setValues] = useState(initial);
   const [errors, setErrors] = useState<Errors>({});
   const [submitted, setSubmitted] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [failure, setFailure] = useState("");
   const refs = useRef<Record<string, HTMLInputElement | null>>({});
   const set = (key: keyof T) => (value: string) => {
     const next = { ...values, [key]: value };
     setValues(next);
     if (submitted) setErrors(validate(next));
   };
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (pending) return;
     setSubmitted(true);
     const found = validate(values);
     setErrors(found);
@@ -159,9 +161,10 @@ function useAuthForm<T extends Record<string, string>>(
       refs.current[first]?.focus();
       return;
     }
-    setValues(initial);
-    setSubmitted(false);
-    onValid();
+    setPending(true); setFailure("");
+    try { await onValid(values); setValues(initial); setSubmitted(false); }
+    catch (error) { setFailure(error instanceof Error ? error.message : "Request failed. Try again."); }
+    finally { setPending(false); }
   };
   const register = (key: keyof T & string) => ({
     name: key,
@@ -172,7 +175,7 @@ function useAuthForm<T extends Record<string, string>>(
       refs.current[key] = el;
     },
   });
-  return { register, submit };
+  return { register, submit, pending, failure };
 }
 
 const emailError = (email: string) =>
@@ -191,16 +194,17 @@ export function SignInPage({ navigate }: { navigate: (p: AuthPage) => void }) {
     notify("Continuing as guest");
     navigate("home");
   };
-  const { register, submit } = useAuthForm(
+  const { register, submit, pending, failure } = useAuthForm(
     { email: "", password: "" },
     (v) =>
       clean({
         email: emailError(v.email),
         password: v.password ? "" : "Password is required.",
       }),
-    () => {
-      notify("Demo sign-in complete. No account was used.");
-      navigate("home");
+    async (v) => {
+      const result = await accountRequest("signin", { email: v.email.trim(), password: v.password });
+      notify(result.account.verified ? "Signed in" : "Signed in. Please verify your email.");
+      window.dispatchEvent(new Event("ryde-session"));
     },
   );
   return (
@@ -225,10 +229,12 @@ export function SignInPage({ navigate }: { navigate: (p: AuthPage) => void }) {
           placeholder="Enter your password"
           {...register("password")}
         />
-        <button type="submit" className="primary">
+        {failure && <p role="alert" className="error">{failure}</p>}
+        <button type="submit" className="primary" disabled={pending}>
           Sign In <ArrowRight size={16} />
         </button>
       </form>
+      <AccountTools />
       <p className="auth-switch">
         New to RydeGrub?{" "}
         <button type="button" onClick={() => navigate("signup")}>
@@ -245,29 +251,30 @@ export function SignUpPage({ navigate }: { navigate: (p: AuthPage) => void }) {
     notify("Continuing as guest");
     navigate("home");
   };
-  const { register, submit } = useAuthForm(
+  const { register, submit, pending, failure } = useAuthForm(
     { name: "", email: "", password: "", confirm: "" },
     (v) =>
       clean({
         name: v.name.trim() ? "" : "Full name is required.",
         email: emailError(v.email),
-        password: v.password ? "" : "Password is required.",
+        password: [...v.password].length >= 15 && [...v.password].length <= 128 ? "" : "Use 15–128 characters.",
         confirm: !v.confirm
           ? "Please confirm your password."
           : v.confirm !== v.password
             ? "Passwords do not match."
             : "",
       }),
-    () => {
-      notify("Demo sign-up complete. No account was created.");
-      navigate("home");
+    async (v) => {
+      const result = await accountRequest("register", { name: v.name.trim(), email: v.email.trim(), password: v.password });
+      notify(result.message);
+      navigate("signin");
     },
   );
   return (
     <AuthShell
       eyebrow="YOUR NEXT CHAPTER STARTS HERE"
       title="Create your account"
-      subtitle="A preview of how sign-up will work."
+      subtitle="Create an account and verify your email."
       onGuest={guest}
     >
       <form className="auth-form" onSubmit={submit} noValidate>
@@ -298,7 +305,8 @@ export function SignUpPage({ navigate }: { navigate: (p: AuthPage) => void }) {
           placeholder="Re-enter your password"
           {...register("confirm")}
         />
-        <button type="submit" className="primary">
+        {failure && <p role="alert" className="error">{failure}</p>}
+        <button type="submit" className="primary" disabled={pending}>
           Create Account <ArrowRight size={16} />
         </button>
       </form>
@@ -309,8 +317,56 @@ export function SignUpPage({ navigate }: { navigate: (p: AuthPage) => void }) {
         </button>
       </p>
       <p className="auth-fineprint">
-        <ShieldCheck size={13} /> Demo form. Nothing you enter is stored.
+        <ShieldCheck size={13} /> Use 15–128 characters. Passwords are screened for known breaches and stored as hashes.
       </p>
     </AuthShell>
   );
+}
+
+
+async function accountRequest(action: string, body?: Record<string, string>) {
+  const response = await fetch(`/api/v1/auth/${action}`, {
+    method: body ? "POST" : "GET", credentials: "same-origin", cache: "no-store",
+    ...(body ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {}),
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || "Account service unavailable.");
+  return result;
+}
+function AccountTools() {
+  const [account, setAccount] = useState<{ name: string; verified: boolean } | null>(null);
+  const [mode, setMode] = useState("verification/request");
+  const [email, setEmail] = useState("");
+  const [token, setToken] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    const refresh = () => { void accountRequest("session").then(r => setAccount(r.account)).catch(() => setAccount(null)); };
+    refresh(); window.addEventListener("ryde-session", refresh);
+    return () => window.removeEventListener("ryde-session", refresh);
+  }, []);
+  async function run(action: string, body: Record<string, string>) {
+    setBusy(true); setMessage("");
+    try { const result = await accountRequest(action, body); setMessage(result.message || "Signed out."); setToken(""); setPassword(""); window.dispatchEvent(new Event("ryde-session")); }
+    catch (error) { setMessage(error instanceof Error ? error.message : "Request failed."); }
+    finally { setBusy(false); }
+  }
+  return <section aria-label="Account verification and recovery">
+    {account && <p>Signed in as {account.name}. {account.verified ? "Email verified." : "Email verification required."} <button type="button" disabled={busy} onClick={() => void run("logout", {})}>Sign out</button></p>}
+    <details><summary>Verify email or reset password</summary>
+      <form onSubmit={e => { e.preventDefault(); void run(mode, mode.endsWith("request") ? { email } : mode === "password/reset" ? { token, password } : { token }); }}>
+        <label>Action <select value={mode} onChange={e => setMode(e.target.value)}>
+          <option value="verification/request">Send verification code</option>
+          <option value="verification/confirm">Confirm verification code</option>
+          <option value="password/request">Request password reset</option>
+          <option value="password/reset">Set new password</option>
+        </select></label>
+        {mode.endsWith("request") ? <FormField label="Email" name="recovery-email" type="email" value={email} onChange={setEmail} autoComplete="email" /> : <FormField label="Code from your email" name="account-code" value={token} onChange={setToken} autoComplete="one-time-code" />}
+        {mode === "password/reset" && <FormField label="New password (15–128 characters)" name="new-password" type="password" value={password} onChange={setPassword} autoComplete="new-password" />}
+        <button type="submit" className="secondary" disabled={busy}>Continue</button>
+      </form>
+    </details>
+    <p role="status">{message}</p>
+  </section>;
 }

@@ -1,3 +1,5 @@
+import { accountConfig } from '../lib/server/account-http.mjs';
+import { RedisLimiter } from '../lib/server/rate-limit.mjs';
 import { isAbsolute, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { serviceConfig } from '../lib/server/scoped-auth.mjs';
@@ -16,6 +18,11 @@ export function checkEnvironment(env = process.env) {
     if (!isAbsolute(config.dataDir)) throw new Error('Service storage must use a private absolute directory.');
     if (origin && origin !== config.origin) throw new Error('Secure API services must share a trusted application origin.');
     origin = config.origin;
+  }
+  if (env.ACCOUNT_APP_ORIGIN) {
+    const account = accountConfig(env);
+    if (account.origin !== origin) throw new Error('Account origin must match application origin.');
+    if (env.NODE_ENV === 'production') new RedisLimiter({ url: env.RATE_LIMIT_REDIS_URL, token: env.RATE_LIMIT_REDIS_TOKEN });
   }
   const catalogKeys = ['CATALOG_DATA_DIR', 'CATALOG_ADMIN_TOKEN'];
   if (catalogKeys.some(key => env[key] !== undefined)) {
@@ -37,3 +44,4 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     process.exitCode = 1;
   }
 }
+
