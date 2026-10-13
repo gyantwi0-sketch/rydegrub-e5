@@ -39,6 +39,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ProfileMedia } from "./profile-media";
+import { VerifiedProfile } from "./verified-profile";
 import { SecureOrders } from "./secure-tracking";
 type Navigate = (page: PageName, id?: string) => void;
 function PageHeading({
@@ -646,7 +647,7 @@ export function OrdersPage({ navigate }: { navigate: Navigate }) {
     </section>
   );
 }
-export function ProfilePage() {
+function DemoProfilePage() {
   const { state, setState, notify, ready } = useRyde();
   const [name, setName] = useState(state.profile.name);
   const [mobile, setMobile] = useState(state.profile.mobile);
@@ -664,7 +665,7 @@ export function ProfilePage() {
       <PageHeading
         eyebrow="MAKE THE JOURNEY YOURS"
         title="A little about you."
-        description="Your name, phone, and orders last only until refresh. Cart and food preferences stay in this browser."
+        description="Demo only: no account is signed in. Name and mobile are not saved; preferences stay in this browser."
       />
       <ProfileMedia />
       <form
@@ -745,4 +746,8 @@ export function ProfilePage() {
       </form>
     </section>
   );
+}
+
+export function ProfilePage() {
+  return <VerifiedProfile fallback={<DemoProfilePage />} />;
 }
