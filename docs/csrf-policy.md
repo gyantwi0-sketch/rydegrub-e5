@@ -14,3 +14,6 @@ Active unsafe endpoints reviewed:
 `tests/csrf-regression.test.mjs` verifies the origin decision and reviews every unsafe Next API route for a documented guarded binding. Existing `tests/media.test.mjs`, `tests/tracking.test.mjs` and `tests/profile.test.mjs` provide authenticated integration tests of same-origin enforcement and cross-origin denials. When introducing another endpoint, review its authentication type, classify it in the test, validate Origin/Fetch Metadata before mutation and add a negative integration test. Do not introduce optional origin checks to make clients convenient. Real authentication/logout deployments must set cookie attributes described above; CSRF tests cannot prove those external cookies exist.
 
 No request body, JWT, password, PNR, payment credential, SMS code or passenger details should be written into logs or security telemetry. This policy does not itself implement registration, payment, PNR lookups, checkout or staff APIs; those future routes require independent security reviews.
+
+
+Native `/api/v1/auth` POST routes use accountHandlers' exact Origin and Sec-Fetch-Site checks, including sign-in and logout. GET session is read-only. Code redemption is POST JSON, never a GET link or query token. The CSRF route inventory includes all seven mutations; HTTP auth tests verify cross-origin rejection.

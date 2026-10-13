@@ -29,6 +29,14 @@ test('unsafe API routes are registered through server-side security wrappers', (
     .filter(path => path.endsWith('route.ts'));
   const methods = /export (?:const|async function) (POST|PUT|PATCH|DELETE)\b/g;
   const classified = new Map([
+    ['v1/auth/register/route.ts', 'account.register'],
+    ['v1/auth/signin/route.ts', 'account.signin'],
+    ['v1/auth/logout/route.ts', 'account.logout'],
+    ['v1/auth/verification/request/route.ts', 'account.requestVerification'],
+    ['v1/auth/verification/confirm/route.ts', 'account.verify'],
+    ['v1/auth/password/request/route.ts', 'account.requestReset'],
+    ['v1/auth/password/reset/route.ts', 'account.reset'],
+
     ['media/route.ts', 'media.upload'],
     ['media/[id]/route.ts', 'media.remove'],
     ['profile/route.ts', 'profile.update'],
@@ -60,3 +68,4 @@ test('unsafe API routes are registered through server-side security wrappers', (
   assert.match(tracking, /request\.method !== 'GET'\) sameOrigin\(request, settings\)/);
   assert.match(profile, /request\.method !== 'GET'\) sameOrigin\(request, settings\)/);
 });
+
