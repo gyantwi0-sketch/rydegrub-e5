@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node scripts/check-env.mjs && next start",
+    "env:check": "node scripts/check-env.mjs",
     "test": "node --test",
     "lint": "biome lint . --diagnostic-level=error",
     "typecheck": "tsc --noEmit",
