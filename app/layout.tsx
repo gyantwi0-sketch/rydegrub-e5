@@ -40,6 +40,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Read the trusted request nonce to enable dynamic SSR and script noncing.
+  await headers();
   return (
     <html lang="en">
       <body className={`${geist.variable} antialiased`}>
