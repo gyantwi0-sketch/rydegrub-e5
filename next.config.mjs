@@ -1,3 +1,4 @@
+import { staticCsp } from './lib/server/csp.mjs';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   serverExternalPackages: ['sharp'],
@@ -10,13 +11,10 @@ const nextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Strict-Transport-Security", value: "max-age=63072000" },
           { key: "X-Frame-Options", value: "DENY" },
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+          { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-          {
-            key: "Content-Security-Policy",
-            // These directives do not constrain Next.js hydration or development scripts.
-            // A nonce-based script-src policy should be added before production launch.
-            value: "base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'",
-          },
+          { key: "Content-Security-Policy", value: staticCsp },
         ],
       },
     ];
