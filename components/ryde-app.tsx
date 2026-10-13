@@ -26,13 +26,7 @@ import {
   LogIn,
 } from "lucide-react";
 import { SignInPage, SignUpPage } from "./auth-forms";
-import {
-  categories,
-  products,
-  totals,
-  money,
-  type Product,
-} from "@/lib/rydegrub";
+import { totals, money, type Product } from "@/lib/rydegrub";
 import { cn } from "@/lib/utils";
 import { RydeProvider, useRyde } from "./ryde-store";
 import { FoodCard, JourneyTicket, ProductDetails } from "./food-components";
@@ -73,7 +67,7 @@ const categoryIcons = [
   Apple,
 ];
 function App() {
-  const { state, ready, notice } = useRyde();
+  const { state, ready, notice, products, categories } = useRyde();
   const [page, setPage] = useState<PageName>("home");
   const [orderId, setOrderId] = useState("");
   const [product, setProduct] = useState<Product | null>(null);
@@ -220,7 +214,7 @@ function App() {
           <span>
             <ShoppingBag size={19} />
             {count} {count === 1 ? "item" : "items"} ·{" "}
-            {money(totals(state.cart).total)}
+            {money(totals(state.cart, products).total)}
           </span>
           <span>
             View cart <ArrowRight size={17} />
@@ -252,7 +246,7 @@ function HomePage({
   onOpen: (p: Product) => void;
   browse: (c?: string) => void;
 }) {
-  const { state, setState, notify } = useRyde();
+  const { state, setState, notify, products, categories } = useRyde();
   const [pnr, setPnr] = useState("");
   const [error, setError] = useState("");
   const activate = (value: string) => {
@@ -395,7 +389,7 @@ function HomePage({
           </button>
         </div>
         <div className="food-grid">
-          {[products[0], products[4], products[5], products[2]].map((p) => (
+          {[products[0], products[4], products[5], products[2]].filter((p): p is Product => Boolean(p)).map((p) => (
             <FoodCard key={p.id} product={p} onOpen={onOpen} />
           ))}
         </div>
@@ -469,6 +463,7 @@ function MenuPage({
   category: string;
   setCategory: (c: string) => void;
 }) {
+  const { products, categories } = useRyde();
   const [search, setSearch] = useState("");
   const [veg, setVeg] = useState(false);
   const [sort, setSort] = useState("recommended");
