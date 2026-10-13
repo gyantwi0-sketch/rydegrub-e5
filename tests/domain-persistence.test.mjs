@@ -32,7 +32,7 @@ function seeded(db) {
 
 test('schema migrates transactionally with FK protection and persists across restart', t => {
   const { db, dir } = fixture(t);
-  assert.equal(db.db.prepare('PRAGMA user_version').get().user_version, 1);
+  assert.equal(db.db.prepare('PRAGMA user_version').get().user_version, 2);
   assert.equal(db.db.prepare('PRAGMA foreign_keys').get().foreign_keys, 1);
   const tables = db.db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(r => r.name);
   for (const table of ['accounts','stations','vendors','catalog','journeys','carts',
