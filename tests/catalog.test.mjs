@@ -51,4 +51,6 @@ test('public catalog and admin API enforce configuration and authorization', asy
   assert.equal((await catalogHandlers.update(request('PUT', { ...sample, price: 145 }, token))).status, 200);
   assert.equal((await catalogHandlers.remove(request('DELETE', { id: sample.id }, token))).status, 200);
   assert.equal((await catalogHandlers.list(new Request('https://example.test/api/catalog?token=secret'))).status, 400);
+  const oversized = request('POST', { ...sample, description: 'x'.repeat(17000) }, token);
+  assert.equal((await catalogHandlers.create(oversized)).status, 413);
 });
