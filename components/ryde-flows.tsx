@@ -23,7 +23,6 @@ import {
   money,
   orderStatus,
   prepareReorder,
-  products,
   statuses,
   totals,
   type Order,
@@ -106,9 +105,9 @@ function Summary({
   );
 }
 export function CartPage({ navigate }: { navigate: Navigate }) {
-  const { state, quantity } = useRyde();
+  const { state, quantity, products } = useRyde();
   const items = products.filter((p) => state.cart[p.id]);
-  const t = totals(state.cart);
+  const t = totals(state.cart, products);
   return (
     <section className="page-section">
       <PageHeading
@@ -172,7 +171,7 @@ export function CartPage({ navigate }: { navigate: Navigate }) {
   );
 }
 export function CheckoutPage({ navigate }: { navigate: Navigate }) {
-  const { state, setState, ready } = useRyde();
+  const { state, setState, ready, products } = useRyde();
   const [form, setForm] = useState({
     name: state.profile.name,
     mobile: state.profile.mobile,
@@ -388,7 +387,7 @@ function useNow() {
 function useReorder(navigate: Navigate) {
   const { setState, notify } = useRyde();
   const [pending, setPending] = useState<Order | null>(null);
-  const preview = pending ? prepareReorder(pending.items) : null;
+  const preview = pending ? prepareReorder(pending.items, products) : null;
   const confirm = () => {
     if (!pending) return;
     // Re-read the catalog when confirming, not just when opening the preview.
@@ -439,7 +438,7 @@ export function DemoTrackingPage({
   id: string;
   navigate: Navigate;
 }) {
-  const { state, ready } = useRyde();
+  const { state, ready, products } = useRyde();
   const now = useNow();
   const order = state.orders.find((o) => o.id === id);
   const { reorder, dialog: reorderDialog } = useReorder(navigate);
