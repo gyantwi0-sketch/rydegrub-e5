@@ -67,7 +67,7 @@ const categoryIcons = [
   Apple,
 ];
 function App() {
-  const { state, ready, notice, products, categories } = useRyde();
+  const { state, ready, notice, products } = useRyde();
   const [page, setPage] = useState<PageName>("home");
   const [orderId, setOrderId] = useState("");
   const [product, setProduct] = useState<Product | null>(null);
