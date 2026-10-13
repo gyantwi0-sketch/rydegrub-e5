@@ -183,7 +183,7 @@ export function CheckoutPage({ navigate }: { navigate: Navigate }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const submitted = useRef(false);
-  const t = totals(state.cart);
+  const t = totals(state.cart, products);
   useEffect(() => {
     if (ready)
       setForm((f) => ({
@@ -385,13 +385,13 @@ function useNow() {
   return now;
 }
 function useReorder(navigate: Navigate) {
-  const { setState, notify } = useRyde();
+  const { setState, notify, products } = useRyde();
   const [pending, setPending] = useState<Order | null>(null);
   const preview = pending ? prepareReorder(pending.items, products) : null;
   const confirm = () => {
     if (!pending) return;
     // Re-read the catalog when confirming, not just when opening the preview.
-    const current = prepareReorder(pending.items);
+    const current = prepareReorder(pending.items, products);
     if (!Object.keys(current.cart).length) return;
     setState((s) => ({ ...s, cart: current.cart, selected: true }));
     setPending(null);
@@ -573,7 +573,7 @@ function OrderSummary({ order }: { order: Order }) {
   );
 }
 export function OrdersPage({ navigate }: { navigate: Navigate }) {
-  const { state } = useRyde();
+  const { state, products } = useRyde();
   const now = useNow();
   const { reorder, dialog: reorderDialog } = useReorder(navigate);
   return (
