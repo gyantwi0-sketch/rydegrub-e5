@@ -173,3 +173,16 @@ test('stalled body is canceled and never accepted as a partial photo', async () 
   assert.equal(canceled, true);
 });
 
+
+
+test('media API rejects unexpected query parameters before any writes', async t => {
+  const { handlers, store, png } = await fixture(t);
+  const valid = request('POST', 'user-a', png);
+  const invalid = new Request(valid.url + '?owner=spoofed&pnr=1234567890', {
+    method: 'POST', headers: valid.headers, body: png,
+  });
+  const result = await handlers.upload(invalid);
+  assert.equal(result.status, 400);
+  assert.equal(result.headers.get('cache-control'), 'private, no-store');
+  assert.equal(store.db.prepare('SELECT count(*) AS n FROM media').get().n, 0);
+});
