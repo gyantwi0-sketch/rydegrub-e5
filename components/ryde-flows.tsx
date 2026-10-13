@@ -438,7 +438,7 @@ export function DemoTrackingPage({
   id: string;
   navigate: Navigate;
 }) {
-  const { state, ready, products } = useRyde();
+  const { state, ready } = useRyde();
   const now = useNow();
   const order = state.orders.find((o) => o.id === id);
   const { reorder, dialog: reorderDialog } = useReorder(navigate);
