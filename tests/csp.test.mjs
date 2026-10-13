@@ -18,7 +18,7 @@ test("Next.js document CSP uses a strict unpredictable script nonce and no inlin
   assert.notEqual(first, second);
   assert.notEqual(p1, p2);
   const d = directives(p1);
-  assert.match(d.get("script-src"), new RegExp(`'nonce-${first}'`));
+  assert.ok(d.get("script-src").includes(`'nonce-${first}'`));
   assert.match(d.get("script-src"), /'strict-dynamic'/);
   assert.doesNotMatch(d.get("script-src"), /unsafe-inline|unsafe-eval|\*/);
   assert.equal(d.get("frame-ancestors"), "'none'");
