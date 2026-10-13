@@ -22,7 +22,7 @@ test('CI blocks dependency risk and emits auditable SBOM artifact', () => {
   assert.match(ci, /pnpm install --frozen-lockfile/);
   assert.match(ci, /pnpm audit --audit-level high/);
   assert.match(ci, /pnpm sbom --sbom-format cyclonedx --lockfile-only/);
-  assert.match(ci, /node scripts\\/verify-sbom.mjs sbom.cdx.json/);
+  assert.match(ci, /node scripts\/verify-sbom.mjs sbom.cdx.json/);
   assert.match(ci, /upload-artifact@v4/);
   assert.match(dependabot, /package-ecosystem: "npm"/);
   assert.match(dependabot, /package-ecosystem: "github-actions"/);
