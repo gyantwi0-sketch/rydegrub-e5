@@ -3,7 +3,7 @@ import test from 'node:test';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { CatalogStore, CatalogError, validateProduct } from '../lib/server/catalog-store.mjs';
+import { CatalogStore, validateProduct } from '../lib/server/catalog-store.mjs';
 import { catalogHandlers } from '../lib/server/catalog-http.mjs';
 import { products as seed } from '../lib/server/catalog-seed.mjs';
 
