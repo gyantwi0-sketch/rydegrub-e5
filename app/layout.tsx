@@ -1,6 +1,7 @@
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
+import { headers } from "next/headers";
 import "./globals.css";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
@@ -34,11 +35,13 @@ export const viewport: Viewport = {
   themeColor: "#07111F",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Read the trusted request nonce to enable dynamic SSR and script noncing.
+  await headers();
   return (
     <html lang="en">
       <body className={`${geist.variable} antialiased`}>
