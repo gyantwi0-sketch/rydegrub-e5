@@ -76,3 +76,4 @@ test("reorder rejects invalid quantities and caps duplicate IDs", () => {
   assert.ok(result.lines[0].changes.includes("Invalid quantity"));
   assert.ok(result.lines[2].changes.includes("Quantity exceeds the per-item limit"));
 });
+

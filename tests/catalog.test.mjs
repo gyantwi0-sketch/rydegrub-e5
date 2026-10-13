@@ -52,5 +52,61 @@ test('public catalog and admin API enforce configuration and authorization', asy
   assert.equal((await catalogHandlers.remove(request('DELETE', { id: sample.id }, token))).status, 200);
   assert.equal((await catalogHandlers.list(new Request('https://example.test/api/catalog?token=secret'))).status, 400);
   const oversized = request('POST', { ...sample, description: 'x'.repeat(17000) }, token);
-  assert.equal((await catalogHandlers.create(oversized)).status, 413);
+  assert.equal((await catalogHandlers.create(oversized)).status, 400);
+});
+
+test('deleted catalog stays empty after restart, including legacy schema migration', t => {
+  const root = mkdtempSync(join(tmpdir(), 'ryde-empty-'));
+  let db = new CatalogStore(root);
+  t.after(() => { db.db.close(); rmSync(root, {recursive:true,force:true}); });
+  for (const p of db.list()) db.remove(p.id);
+  db.db.close(); db = new CatalogStore(root);
+  assert.deepEqual(db.list(), []);
+});
+
+test('indexed search filters station/category/diet, paginates stably, updates and removes index entries', t => {
+  const root = mkdtempSync(join(tmpdir(), 'ryde-search-'));
+  const db = new CatalogStore(root);
+  t.after(() => { db.db.close(); rmSync(root, {recursive:true,force:true}); });
+  for (const p of db.list()) db.remove(p.id);
+  db.create({...sample,id:'meal-one',name:'Paneer Rice',ingredients:'paneer rice',stations:['NDLS'],price:100,veg:true,protein:25});
+  db.create({...sample,id:'meal-two',name:'Chicken Rice',ingredients:'chicken rice',stations:['KOTA'],price:200,veg:false,protein:30});
+  db.create({...sample,id:'meal-three',name:'Curd Rice',ingredients:'curd rice',stations:['NDLS'],price:150,veg:true,protein:10});
+  assert.equal(db.search({q:'Rice'}).total,3);
+  assert.equal(db.search({station:'NDLS',diet:'high-protein'}).total,1);
+  assert.equal(db.search({diet:'vegetarian'}).total,2);
+  assert.equal(db.search({category:'missing'}).total,0);
+  assert.equal(db.search({sort:'price-desc',limit:1,page:2}).products[0].id,'meal-three');
+  assert.equal(db.search({q:'Paneer'}).products[0].id,'meal-one');
+  db.update({...sample,id:'meal-one',name:'Lentil Rice',ingredients:'lentils',stations:['NDLS']});
+  assert.equal(db.search({q:'Paneer'}).total,0);
+  db.remove('meal-two'); assert.equal(db.search({q:'Chicken'}).total,0);
+  for(const input of [{limit:101},{page:-1},{sort:'price; DROP TABLE products'},{station:'../x'},{q:'*'},{secret:'x'}])assert.throws(()=>db.search(input),{status:400});
+  assert.equal(db.search({q:'Rice OR chicken'}).total,0);
+  assert.equal(db.search({station:'BCT'}).total,0);
+});
+
+test('legacy empty catalog migrates without demo repopulation; future schema fails closed', async t => {
+  const { DatabaseSync } = await import('node:sqlite');
+  const root = mkdtempSync(join(tmpdir(), 'ryde-legacy-'));
+  t.after(() => rmSync(root, {recursive:true,force:true}));
+  const legacy = new DatabaseSync(join(root,'catalog.sqlite'));
+  legacy.exec('CREATE TABLE products(id TEXT PRIMARY KEY,document TEXT NOT NULL,updated INTEGER NOT NULL)'); legacy.close();
+  const db = new CatalogStore(root); assert.deepEqual(db.list(),[]);
+  db.db.exec('PRAGMA user_version=999'); db.db.close();
+  assert.throws(()=>new CatalogStore(root),{status:503});
+});
+
+test('search HTTP validates repeated/unknown parameters and admin delete rejects extra fields', async t => {
+  const root=mkdtempSync(join(tmpdir(),'ryde-search-http-'));
+  const oldRoot=process.env.CATALOG_DATA_DIR,oldToken=process.env.CATALOG_ADMIN_TOKEN;
+  process.env.CATALOG_DATA_DIR=root;process.env.CATALOG_ADMIN_TOKEN='test-only-catalog-admin-token-123456';
+  t.after(()=>{if(oldRoot===undefined)delete process.env.CATALOG_DATA_DIR;else process.env.CATALOG_DATA_DIR=oldRoot;if(oldToken===undefined)delete process.env.CATALOG_ADMIN_TOKEN;else process.env.CATALOG_ADMIN_TOKEN=oldToken;rmSync(root,{recursive:true,force:true});});
+  for(const query of ['q=a&q=b','limit=-1','page=1.5','__proto__=x','token=secret','sort=wrong']) {
+    assert.equal((await catalogHandlers.search(new Request(`https://example.test/api/catalog/search?${query}`))).status,400);
+  }
+  const result=await catalogHandlers.search(new Request('https://example.test/api/catalog/search?limit=2&page=1&diet=vegetarian'));
+  assert.equal(result.status,200); const data=await result.json(); assert.equal(data.products.length,2); assert.ok(data.products.every(p=>p.veg));
+  const removed=await catalogHandlers.remove(new Request('https://example.test/api/admin/catalog',{method:'DELETE',headers:{'Content-Type':'application/json',Authorization:`Bearer ${process.env.CATALOG_ADMIN_TOKEN}`},body:JSON.stringify({id:seed[0].id,unexpected:true})}));
+  assert.equal(removed.status,400);
 });

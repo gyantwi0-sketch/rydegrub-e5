@@ -745,3 +745,4 @@ export function ProfilePage() {
     </section>
   );
 }
+
