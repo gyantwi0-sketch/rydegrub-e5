@@ -573,7 +573,7 @@ function OrderSummary({ order }: { order: Order }) {
   );
 }
 export function OrdersPage({ navigate }: { navigate: Navigate }) {
-  const { state, products } = useRyde();
+  const { state } = useRyde();
   const now = useNow();
   const { reorder, dialog: reorderDialog } = useReorder(navigate);
   return (
