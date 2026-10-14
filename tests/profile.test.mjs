@@ -5,6 +5,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { identityKey } from '../lib/server/scoped-auth.mjs';
+import { recommend } from '../lib/server/recommendations.mjs';
 import { ProfileStore } from '../lib/server/profile-store.mjs';
 import { profileHandlers, profileConfig } from '../lib/server/profile-http.mjs';
 
@@ -31,7 +32,11 @@ function fixture(t) {
   const dir = mkdtempSync(join(tmpdir(), 'ryde-profile-'));
   const db = new ProfileStore(dir);
   let sms = [];
-  const api = profileHandlers({ config: () => cfg, store: () => db, send: async (_config, phone, code) => {
+  const api = profileHandlers({ catalog: () => [
+    {id: 'veg', category: 'Meals', tags: ['Vegetarian']},
+    {id: 'protein', category: 'Meals', tags: ['High-protein']},
+    {id: 'baby', category: 'Toddler Food', tags: ['Vegetarian']},
+  ], config: () => cfg, store: () => db, send: async (_config, phone, code) => {
     sms.push({ phone, code });
   } });
   t.after(() => { db.close(); rmSync(dir, { recursive: true, force: true }); });
@@ -119,4 +124,66 @@ test('rate limits are durable and consent/profile deletion purges private record
   assert.equal(db.purge(owner), 1);
   assert.equal(db.read(owner).name, '');
   assert.deepEqual(db.consentHistory(owner), []);
+});
+
+
+
+test('recommendations require verified identity and ignore preferences without recorded consent', async t => {
+  const { db, api } = fixture(t);
+  db.update(owner, { name: 'Alice', preferences: ['High-protein'] });
+  assert.equal((await api.recommendations(request({ subject: '' }))).status, 401);
+  assert.equal((await api.recommendations(request({ query: '?preferences=High-protein' }))).status, 400);
+  const general = await api.recommendations(request());
+  assert.match(general.headers.get('cache-control'), /no-store/);
+  assert.equal((await general.json()).mode, 'general');
+  assert.deepEqual(db.personalization(owner), { granted: false, preferences: [] });
+  const saved = await api.savePersonalization(request({ method: 'PATCH', body: { granted: true, preferences: ['High-protein'] } }));
+  assert.equal(saved.status, 200);
+  const personalized = await (await api.recommendations(request())).json();
+  assert.equal(personalized.mode, 'personalized');
+  assert.deepEqual(personalized.items, [{ id: 'protein', reasons: ['Matches High-protein'] }]);
+  assert.equal(JSON.stringify(personalized).includes('Alice'), false);
+  assert.equal((await (await api.recommendations(request({ subject: 'bob' }))).json()).mode, 'general');
+  assert.equal(db.read(owner).name, 'Alice');
+  db.consent(owner, { purpose: 'personalization', granted: false });
+  assert.equal((await (await api.recommendations(request())).json()).mode, 'general');
+});
+
+test('personalization reset clears preferences and revokes consent together, preserving contact and marketing choices', async t => {
+  const { db, api } = fixture(t);
+  db.update(owner, { name: 'Alice', preferences: [] });
+  db.consent(owner, { purpose: 'marketing', granted: true });
+  db.savePersonalization(owner, { granted: true, preferences: ['Vegetarian'] });
+  assert.equal((await api.resetPersonalization(request({ method: 'DELETE', headers: { origin: 'https://evil.example' }, body: {} }))).status, 403);
+  const result = await api.resetPersonalization(request({ method: 'DELETE', body: {} }));
+  assert.equal(result.status, 200);
+  assert.deepEqual((await result.json()).settings, { granted: false, preferences: [] });
+  const profile = db.read(owner);
+  assert.deepEqual(profile.preferences, []); assert.equal(profile.name, 'Alice');
+  assert.equal(profile.consents.marketing.granted, true);
+  assert.equal(profile.consents.personalization.granted, false);
+  assert.equal(db.consentHistory(owner)[0].granted, false);
+  assert.equal((await api.savePersonalization(request({ method: 'PATCH', headers: { origin: 'https://evil.example' }, body: { granted: true, preferences: [] } }))).status, 403);
+  for (const body of [{ granted: true, preferences: [], owner: other }, { granted: 'yes', preferences: [] },
+    { granted: false, preferences: ['Vegetarian'] }, { granted: true, preferences: ['unknown'] }])
+    assert.equal((await api.savePersonalization(request({ method: 'PATCH', body }))).status, 400);
+});
+
+test('consent write failure rolls back personalization changes', t => {
+  const { db } = fixture(t);
+  db.savePersonalization(owner, { granted: true, preferences: ['Vegetarian'] });
+  db.db.exec("CREATE TRIGGER reject_consent BEFORE INSERT ON consent_events BEGIN SELECT RAISE(ABORT,'test'); END;");
+  assert.throws(() => db.savePersonalization(owner, { granted: false, preferences: [] }));
+  assert.deepEqual(db.personalization(owner), { granted: true, preferences: ['Vegetarian'] });
+});
+
+test('recommendation fallback never relaxes selected diet constraints or recommends infant food', () => {
+  const catalog = [
+    { id: 'baby', category: 'Toddler Food', tags: ['Vegetarian'] },
+    { id: 'inactive', active: false, category: 'Meals', tags: ['Vegetarian'] },
+    { id: 'veg', category: 'Meals', tags: ['Vegetarian'] },
+  ];
+  assert.deepEqual(recommend(catalog, { granted: true, preferences: ['High-protein'] }).items, []);
+  assert.deepEqual(recommend(catalog, { granted: false, preferences: ['High-protein'] }).items.map(p => p.id), ['veg']);
+  assert.equal(recommend(catalog, { granted: false, preferences: [] }).mode, 'general');
 });

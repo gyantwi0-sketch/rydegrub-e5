@@ -11,7 +11,6 @@ import {
   ShoppingBag,
   ShoppingCart,
   SlidersHorizontal,
-  Sparkles,
   TrainFront,
   UserRound,
   UtensilsCrossed,
@@ -25,6 +24,7 @@ import {
   Apple,
   LogIn,
 } from "lucide-react";
+import { MealSuggestions } from "./personalization";
 import { SignInPage, SignUpPage } from "./auth-forms";
 import {
   categories,
@@ -268,14 +268,6 @@ function HomePage({
     setState((s) => ({ ...s, selected: true }));
     notify("Demo journey selected. Your next stop: good food.");
   };
-  const picks = products
-    .filter((p) => !["Toddler Food", "Fruits"].includes(p.category))
-    .filter((p) =>
-      state.profile.preferences.length
-        ? state.profile.preferences.every((t) => p.tags.includes(t))
-        : ["paneer", "khichdi", "idli"].includes(p.id),
-    )
-    .slice(0, 3);
   return (
     <>
       <section className="hero">
@@ -404,59 +396,7 @@ function HomePage({
           images are representative.
         </div>
       </section>
-      <section className="personalized">
-        <div className="personalized-copy">
-          <span className="personal-icon">
-            <Sparkles size={23} />
-          </span>
-          <div className="eyebrow cyan">A LITTLE MORE YOU</div>
-          <h2>
-            Your journey.
-            <br />
-            Your kind of meal.
-          </h2>
-          <p>
-            Comfort food, lighter bites, or a little extra protein. Find a pick
-            that feels like you.
-          </p>
-          <span className="ai-label">
-            <Sparkles size={12} /> AI-style picks · demo recommendations
-          </span>
-        </div>
-        <div className="personalized-picks">
-          {picks.length ? (
-            picks.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => onOpen(p)}
-                className="mini-food"
-              >
-                <img
-                  src={p.image}
-                  alt=""
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
-                />
-                <div>
-                  <span>
-                    {p.tags.includes("High-protein")
-                      ? "PROTEIN-PACKED"
-                      : "LIGHT & COMFORTING"}
-                  </span>
-                  <h3>{p.name}</h3>
-                  <p>
-                    {money(p.price)} <span>· {p.protein}g sample protein</span>
-                  </p>
-                </div>
-                <ArrowRight size={18} />
-              </button>
-            ))
-          ) : (
-            <p>No exact matches. Try adjusting your preferences in Profile.</p>
-          )}
-        </div>
-      </section>
+      <MealSuggestions onOpen={onOpen} />
     </>
   );
 }
@@ -577,3 +517,4 @@ function MenuPage({
     </section>
   );
 }
+

@@ -6,12 +6,10 @@ import {
   Check,
   CheckCircle2,
   CreditCard,
-  Leaf,
   MapPin,
   ShieldCheck,
   ShoppingBag,
   Smartphone,
-  Sparkles,
   TrainFront,
   Trash2,
   UserRound,
@@ -34,6 +32,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { PersonalizationSettings } from "./personalization";
 import { ProfileMedia } from "./profile-media";
 import { SecureOrders } from "./secure-tracking";
 type Navigate = (page: PageName, id?: string) => void;
@@ -560,23 +559,22 @@ export function ProfilePage() {
   const { state, setState, notify, ready } = useRyde();
   const [name, setName] = useState(state.profile.name);
   const [mobile, setMobile] = useState(state.profile.mobile);
-  const [preferences, setPreferences] = useState(state.profile.preferences);
   const [error, setError] = useState("");
   useEffect(() => {
     if (ready) {
       setName(state.profile.name);
       setMobile(state.profile.mobile);
-      setPreferences(state.profile.preferences);
     }
-  }, [ready, state.profile.name, state.profile.mobile, state.profile.preferences]);
+  }, [ready, state.profile.name, state.profile.mobile]);
   return (
     <section className="page-section profile-page">
       <PageHeading
         eyebrow="MAKE THE JOURNEY YOURS"
         title="A little about you."
-        description="Your name, phone, and orders last only until refresh. Cart and food preferences stay in this browser."
+        description="Demo contact details last only until refresh. Manage account meal preferences below."
       />
       <ProfileMedia />
+      <PersonalizationSettings />
       <form
         className="panel"
         onSubmit={(e) => {
@@ -588,9 +586,9 @@ export function ProfilePage() {
           setError("");
           setState((s) => ({
             ...s,
-            profile: { name: name.trim(), mobile, preferences },
+            profile: { name: name.trim(), mobile, preferences: [] },
           }));
-          notify("Preferences saved. Contact details last until refresh.");
+          notify("Demo contact details saved until refresh.");
         }}
       >
         <div className="profile-avatar">
@@ -621,36 +619,13 @@ export function ProfilePage() {
             />
           </label>
         </div>
-        <fieldset className="preferences">
-          <legend>Your kind of comfort food</legend>
-          <p>Pick what you like. We&apos;ll find meals that match.</p>
-          {["Vegetarian", "High-protein", "Mild spice"].map((p) => (
-            <label key={p}>
-              <input
-                type="checkbox"
-                checked={preferences.includes(p)}
-                onChange={(e) =>
-                  setPreferences((v) =>
-                    e.target.checked ? [...v, p] : v.filter((x) => x !== p),
-                  )
-                }
-              />
-              <Leaf size={17} />
-              {p}
-            </label>
-          ))}
-        </fieldset>
-        <p className="ai-label">
-          <Sparkles size={14} /> AI-style picks · demo recommendations based on
-          product tags.
-        </p>
         {error && (
           <p role="alert" className="error">
             {error}
           </p>
         )}
         <button className="primary" disabled={!ready} type="submit">
-          Save preferences <Check size={17} />
+          Save demo details <Check size={17} />
         </button>
       </form>
     </section>
