@@ -1,0 +1,59 @@
+groups:
+  - name: rydegrub
+    rules:
+      - alert: RydeGrubScrapeUnavailable
+        expr: up{job="rydegrub"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: RydeGrub metrics target cannot be scraped
+      - alert: RydeGrubDependencyUnavailable
+        expr: ryde_ready == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: RydeGrub database or rate limiter is not ready
+      - alert: RydeGrubApiErrors
+        expr: sum(rate(ryde_http_requests_total{status="5xx"}[5m])) / clamp_min(sum(rate(ryde_http_requests_total[5m])), 0.01) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: More than five percent of API requests are failing
+      - alert: RydeGrubApiLatency
+        expr: histogram_quantile(0.95, sum by (le) (rate(ryde_http_duration_seconds_bucket[5m]))) > 3
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: API p95 latency exceeds three seconds
+      - alert: RydeGrubLimiterUnavailable
+        expr: sum(increase(ryde_rate_limit_total{outcome="unavailable"}[5m])) > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Distributed rate limiting is rejecting requests due to outages
+      - alert: RydeGrubProviderUnavailable
+        expr: sum by (provider) (rate(ryde_provider_requests_total{outcome=~"unavailable|circuit_open"}[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: External provider errors or open circuit detected
+      - alert: RydeGrubPaymentFailures
+        expr: sum(increase(ryde_payment_transitions_total{state="failed"}[5m])) > 5
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Repeated verified payment failures
+      - alert: RydeGrubQueueStalled
+        expr: ryde_queue_oldest_seconds > 300
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: A reporting worker has jobs waiting for more than five minutes

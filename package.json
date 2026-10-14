@@ -6,14 +6,16 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "node scripts/check-env.mjs && next start",
+    "start": "node scripts/check-env.mjs && node scripts/init-services.mjs && next start",
     "env:check": "node scripts/check-env.mjs",
     "test": "node --test",
     "lint": "biome lint . --diagnostic-level=error",
     "typecheck": "tsc --noEmit",
     "media:cleanup": "node scripts/cleanup-media.mjs",
     "tracking:admin": "node scripts/tracking-admin.mjs",
-    "tracking:cleanup": "node scripts/tracking-admin.mjs cleanup"
+    "tracking:cleanup": "node scripts/tracking-admin.mjs cleanup",
+    "test:smoke": "node scripts/smoke-http.mjs",
+    "data:init": "node scripts/init-services.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
