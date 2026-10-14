@@ -40,6 +40,7 @@ test('unsafe API routes are registered through server-side security wrappers', (
     ['media/route.ts', 'media.upload'],
     ['media/[id]/route.ts', 'media.remove'],
     ['profile/route.ts', 'profile.update'],
+    ['profile/personalization/route.ts', 'profile.savePersonalization'],
     ['profile/consent/route.ts', 'profile.changeConsent'],
     ['profile/phone/start/route.ts', 'profile.startPhone'],
     ['profile/phone/confirm/route.ts', 'profile.confirmPhone'],

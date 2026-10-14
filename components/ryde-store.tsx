@@ -40,11 +40,7 @@ function restore(raw: string): State {
     profile: {
       name: "",
       mobile: "",
-      preferences: Array.isArray(x?.preferences)
-        ? x.preferences.filter((p: unknown) =>
-            ["Vegetarian", "High-protein", "Mild spice"].includes(String(p)),
-          )
-        : [],
+      preferences: [],
     },
   };
 }
@@ -71,7 +67,6 @@ export function RydeProvider({ children }: { children: ReactNode }) {
           JSON.stringify({
             cart: state.cart,
             selected: state.selected,
-            preferences: state.profile.preferences,
           }),
         );
       } catch {
@@ -107,3 +102,4 @@ export function useRyde() {
   if (!c) throw new Error("RydeProvider required");
   return c;
 }
+
