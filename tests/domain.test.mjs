@@ -2,10 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   categories,
-  orderStatus,
   prepareReorder,
   products,
-  statuses,
   totals,
 } from "../lib/rydegrub.ts";
 
@@ -42,16 +40,6 @@ test("unknown IDs do not contribute to a total", () => {
   });
 });
 
-test("demo order status advances at fifteen-second boundaries", () => {
-  const createdAt = 1_000_000;
-  assert.equal(statuses.length, 5);
-  assert.equal(orderStatus(createdAt, createdAt - 1), 0);
-  assert.equal(orderStatus(createdAt, createdAt + 14_999), 0);
-  assert.equal(orderStatus(createdAt, createdAt + 15_000), 1);
-  assert.equal(orderStatus(createdAt, createdAt + 59_999), 3);
-  assert.equal(orderStatus(createdAt, createdAt + 60_000), 4);
-  assert.equal(orderStatus(createdAt, createdAt + 600_000), 4);
-});
 
 test("reorder uses current prices and flags changed allergen information", () => {
   const previous = { ...products[0], price: 99, allergens: "None known" };
@@ -82,3 +70,4 @@ test("reorder rejects invalid quantities and caps duplicate IDs", () => {
   assert.ok(result.lines[0].changes.includes("Invalid quantity"));
   assert.ok(result.lines[2].changes.includes("Quantity exceeds the per-item limit"));
 });
+

@@ -8,7 +8,6 @@ import {
   CreditCard,
   Leaf,
   MapPin,
-  Package,
   ShieldCheck,
   ShoppingBag,
   Smartphone,
@@ -16,15 +15,12 @@ import {
   TrainFront,
   Trash2,
   UserRound,
-  UtensilsCrossed,
 } from "lucide-react";
 import {
   journey,
   money,
-  orderStatus,
   prepareReorder,
   products,
-  statuses,
   totals,
   type Order,
 } from "@/lib/rydegrub";
@@ -376,15 +372,6 @@ export function CheckoutPage({ navigate }: { navigate: Navigate }) {
     </section>
   );
 }
-function useNow() {
-  const [now, setNow] = useState(0);
-  useEffect(() => {
-    setNow(Date.now());
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, []);
-  return now;
-}
 function useReorder(navigate: Navigate) {
   const { setState, notify } = useRyde();
   const [pending, setPending] = useState<Order | null>(null);
@@ -440,7 +427,6 @@ export function DemoTrackingPage({
   navigate: Navigate;
 }) {
   const { state, ready } = useRyde();
-  const now = useNow();
   const order = state.orders.find((o) => o.id === id);
   const { reorder, dialog: reorderDialog } = useReorder(navigate);
   if (!ready) return <p className="page-section">Loading order…</p>;
@@ -453,99 +439,25 @@ export function DemoTrackingPage({
         onAction={() => navigate("orders")}
       />
     );
-  const status = orderStatus(order.createdAt, now);
   return (
     <section className="page-section">
       {reorderDialog}
-      <PageHeading
-        eyebrow="YOUR FOOD IS ON ITS WAY"
-        title={
-          status === 4 ? "A delicious arrival." : "Good food. Getting closer."
-        }
-        description="Simulated delivery progress · completes in 60 seconds"
-      />
+      <PageHeading eyebrow="DEMO ORDER" title="Your sample meal ticket."
+        description="This order is a local preview. It has no live preparation or delivery status." />
       <div className="two-column">
         <section className="panel tracking-main">
-          <div className="tracking-top">
-            <div>
-              <span className="eyebrow">ORDER {order.id}</span>
-              <h2>{statuses[status]}</h2>
-            </div>
-            <span className="subtle-pill cyan">
-              {status === 4 ? "Enjoy your meal" : "Demo delivery"}
-            </span>
-          </div>
-          <div
-            className="coach-illustration"
-            aria-label={`Train coach ${order.passenger.coach}, seat ${order.passenger.seat}`}
-          >
-            <span className="coach-tag">{order.passenger.coach}</span>
-            <div className="coach-windows">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className={cn(i === 3 && "your-window")}>
-                  {i === 3 ? <ShoppingBag size={24} /> : <span />}
-                </div>
-              ))}
-            </div>
-            <span className="coach-caption">
-              YOUR SEAT · {order.passenger.seat}
-            </span>
-            <div className="rail-track" />
-          </div>
-          <ol className="timeline">
-            {statuses.map((s, i) => (
-              <li
-                key={s}
-                className={cn(
-                  i <= status && "complete",
-                  i === status && "current",
-                )}
-              >
-                <span className="timeline-dot">
-                  {i <= status ? <Check size={15} /> : i + 1}
-                </span>
-                <div>
-                  <h3>{s}</h3>
-                  <p>
-                    {
-                      [
-                        "Your demo order is safely on board.",
-                        "A little care, a lot of flavour.",
-                        "Sealed fresh for the journey.",
-                        "Your meal has reached your coach.",
-                        "Delivered! Enjoy every bite.",
-                      ][i]
-                    }
-                  </p>
-                </div>
-                <span className="timeline-time">{i * 15}s</span>
-              </li>
-            ))}
-          </ol>
-          <div className="delivery-destination">
-            <MapPin size={20} />
-            <div>
-              <strong>{order.passenger.station}</strong>
-              <p>
-                Coach {order.passenger.coach} · Seat {order.passenger.seat} ·{" "}
-                {order.passenger.name}
-              </p>
-            </div>
-          </div>
-          {status === 4 && (
-            <button
-              className="primary full-width"
-              onClick={() => reorder(order)}
-            >
-              Order again <ArrowRight size={17} />
-            </button>
-          )}
+          <h2>Demo created</h2>
+          <p>Created {new Date(order.createdAt).toLocaleString()}</p>
+          <p>No payment was collected and no vendor received this order.</p>
+          <button className="primary" onClick={() => reorder(order)}>Review reorder <ArrowRight size={17} /></button>
+          <button className="text-link" onClick={() => navigate("orders")}>View real order tracking</button>
         </section>
         <OrderSummary order={order} />
       </div>
     </section>
   );
 }
+
 function OrderSummary({ order }: { order: Order }) {
   return (
     <Summary
@@ -575,7 +487,6 @@ function OrderSummary({ order }: { order: Order }) {
 }
 export function OrdersPage({ navigate }: { navigate: Navigate }) {
   const { state } = useRyde();
-  const now = useNow();
   const { reorder, dialog: reorderDialog } = useReorder(navigate);
   return (
     <section className="page-section">
@@ -597,14 +508,13 @@ export function OrdersPage({ navigate }: { navigate: Navigate }) {
       ) : (
         <div className="orders-list">
           {state.orders.map((o) => {
-            const status = orderStatus(o.createdAt, now);
             return (
               <article className="panel order-card" key={o.id}>
                 <div className="order-card-head">
                   <span>
                     <ShoppingBag size={18} /> {o.id}
                   </span>
-                  <span className="subtle-pill cyan">{statuses[status]}</span>
+                  <span className="subtle-pill cyan">Demo created</span>
                 </div>
                 <h3>
                   {o.items
@@ -630,7 +540,7 @@ export function OrdersPage({ navigate }: { navigate: Navigate }) {
                       className="secondary"
                       onClick={() => navigate("demo-tracking", o.id)}
                     >
-                      {status === 4 ? "View details" : "Track order"}
+                      View demo details
                       <ArrowRight size={15} />
                     </button>
                     <button className="text-link" onClick={() => reorder(o)}>
@@ -746,3 +656,4 @@ export function ProfilePage() {
     </section>
   );
 }
+
