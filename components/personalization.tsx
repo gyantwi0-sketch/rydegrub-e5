@@ -82,7 +82,7 @@ export function PersonalizationSettings() {
       setSettings((await response.json()).settings);
       setMessage(reset || !settings.granted ? 'Personalization is off. Saved food preferences were cleared.' : 'Personalization settings saved.');
       window.dispatchEvent(new Event('ryde-personalization-changed'));
-    } catch { setMessage('Could not save settings. Your previous saved choice still applies. Try again.'); }
+    } catch { setMessage('Could not confirm your settings. Reload Profile to check the saved choice before retrying.'); }
     finally { setBusy(false); }
   }
   return <section className="panel" aria-label="Personalization controls">
