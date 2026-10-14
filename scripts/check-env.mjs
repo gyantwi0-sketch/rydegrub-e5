@@ -1,3 +1,4 @@
+import { serviceLimitConfig } from '../lib/server/service-limits.mjs';
 import { accountConfig } from '../lib/server/account-http.mjs';
 import { RedisLimiter } from '../lib/server/rate-limit.mjs';
 import { isAbsolute, resolve } from 'node:path';
@@ -11,6 +12,10 @@ export function checkEnvironment(env = process.env) {
   if (Object.keys(env).some(key => /^NEXT_PUBLIC_/i.test(key) &&
       /(PRIVATE|SECRET|TOKEN|PASSWORD|CREDENTIAL|OTP_PEPPER)/i.test(key))) {
     throw new Error('Sensitive variable cannot use NEXT_PUBLIC_ prefix.');
+  }
+  if (env.NODE_ENV === 'production') {
+    serviceLimitConfig(env);
+    new RedisLimiter({ url: env.RATE_LIMIT_REDIS_URL, token: env.RATE_LIMIT_REDIS_TOKEN });
   }
   let origin;
   for (const prefix of ['MEDIA', 'TRACKING', 'PROFILE']) {
