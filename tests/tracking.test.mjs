@@ -76,7 +76,7 @@ test('owner and code receive only the explicit fulfilment projection, never priv
   const ownerResponse = await api.read(request(), order.id);
   assert.equal(ownerResponse.status, 200);
   const body = await ownerResponse.json();
-  assert.deepEqual(Object.keys(body.tracking).sort(), ['eta', 'id', 'stage', 'station', 'updatedAt', 'version']);
+  assert.deepEqual(Object.keys(body.tracking).sort(), ['eta', 'events', 'hasEarlierEvents', 'id', 'stage', 'station', 'updatedAt', 'version']);
   const { token } = store.issueToken(order.id, alice);
   const shared = await api.readWithCode(request({ method: 'POST', subject: '', body: { token } }), order.id);
   assert.equal(shared.status, 200);
@@ -175,11 +175,14 @@ test('trusted fulfilment writes validate schemas, immutable ownership, versions 
     assert.throws(() => store.update(order.id, 1, { ...snapshot, [extra]: 'sensitive' }), { status: 400 });
   assert.throws(() => store.create(alice, { ...snapshot, stage: 'delivered' }), { status: 409 });
   assert.throws(() => store.update(order.id, 1, { ...snapshot, stage: 'invented' }), { status: 400 });
-  store.update(order.id, 1, { ...snapshot, stage: 'packed' });
+  assert.throws(() => store.update(order.id, 1, { ...snapshot, stage: 'packed' }), { status: 409 });
+  store.update(order.id, 1, { ...snapshot, stage: 'preparing' });
   assert.throws(() => store.update(order.id, 1, { ...snapshot, stage: 'arriving' }), { status: 409 });
   assert.throws(() => store.update(order.id, 2, snapshot), { status: 409 });
-  store.update(order.id, 2, { ...snapshot, stage: 'delivered' });
-  assert.throws(() => store.update(order.id, 3, { ...snapshot, stage: 'cancelled' }), { status: 409 });
+  store.update(order.id, 2, { ...snapshot, stage: 'packed' });
+  store.update(order.id, 3, { ...snapshot, stage: 'arriving' });
+  store.update(order.id, 4, { ...snapshot, stage: 'delivered' });
+  assert.throws(() => store.update(order.id, 5, { ...snapshot, stage: 'cancelled' }), { status: 409 });
   assert.throws(() => applyTrackingEvent(store, config.issuer, 'update', { id: order.id, subject: 'account-b', expectedVersion: 3, snapshot }), { status: 400 });
 });
 test('tracking persists across restarts and internal failures return no exception detail', async t => {
@@ -220,3 +223,4 @@ test('HTTP owner list and complete create-code/read/rotate/revoke flow enforce t
   assert.equal((await api.revokeCode(request({ method: 'DELETE' }), order.id)).status, 204);
   assert.equal((await api.readWithCode(request({ method: 'POST', subject: '', body: { token: second.token } }), order.id)).status, 404);
 });
+
