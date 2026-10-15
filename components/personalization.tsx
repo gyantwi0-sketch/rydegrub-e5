@@ -1,13 +1,16 @@
 "use client";
-import { useEffect, useState } from 'react';
-import { products, money, type Product } from '@/lib/rydegrub';
+import { useEffect, useState, useMemo } from 'react';
+import { money, type Product } from '@/lib/rydegrub';
+import { useRyde } from './ryde-store';
 const preferences = ['Vegetarian', 'High-protein', 'Mild spice'];
 type Settings = { granted: boolean; preferences: string[] };
 type Picks = { mode: string; explanation: string; items: { id: string; reasons: string[] }[] };
-const general: Picks = { mode: 'general', explanation: 'General menu suggestions. Personal preferences were not used.',
-  items: products.filter(p => p.category !== 'Toddler Food').slice(0,3).map(p => ({ id: p.id, reasons: ['Selected from the menu'] })) };
+const generalPicks = (products: Product[]): Picks => ( { mode: 'general', explanation: 'General menu suggestions. Personal preferences were not used.',
+  items: products.filter(p => p.category !== 'Toddler Food').slice(0,3).map(p => ({ id: p.id, reasons: ['Selected from the menu'] })) });
 
 export function MealSuggestions({ onOpen }: { onOpen: (p: Product) => void }) {
+  const { products } = useRyde();
+  const general = useMemo(() => generalPicks(products), [products]);
   const [result, setResult] = useState<Picks>(general);
   useEffect(() => {
     let controller: AbortController;
@@ -35,7 +38,7 @@ export function MealSuggestions({ onOpen }: { onOpen: (p: Product) => void }) {
     return () => { controller?.abort(); clearTimeout(timer); window.removeEventListener('focus', refresh);
       window.removeEventListener('pageshow', refresh); window.removeEventListener('ryde-personalization-changed', refresh);
       document.removeEventListener('visibilitychange', visibility); };
-  }, []);
+  }, [general]);
   return <section className="personalized" aria-label="Meal suggestions">
     <div className="personalized-copy">
       <div className="eyebrow cyan">MEAL SUGGESTIONS</div>

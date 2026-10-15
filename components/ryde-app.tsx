@@ -27,8 +27,6 @@ import {
 import { MealSuggestions } from "./personalization";
 import { SignInPage, SignUpPage } from "./auth-forms";
 import {
-  categories,
-  products,
   totals,
   money,
   type Product,
@@ -73,7 +71,7 @@ const categoryIcons = [
   Apple,
 ];
 function App() {
-  const { state, ready, notice } = useRyde();
+  const { state, ready, notice, products, catalogMode } = useRyde();
   const [page, setPage] = useState<PageName>("home");
   const [orderId, setOrderId] = useState("");
   const [product, setProduct] = useState<Product | null>(null);
@@ -167,6 +165,8 @@ function App() {
         </div>
       </header>
       <main className="app-main">
+        {catalogMode === "unavailable" && <p role="alert">The menu is unavailable. <button className="text-link" onClick={() => window.location.reload()}>Reload menu</button></p>}
+        {catalogMode === "demo" && <p role="status" className="demo-warning">Sample menu · live ordering is not available.</p>}
         {page === "home" && (
           <HomePage
             onOpen={setProduct}
@@ -220,7 +220,7 @@ function App() {
           <span>
             <ShoppingBag size={19} />
             {count} {count === 1 ? "item" : "items"} ·{" "}
-            {money(totals(state.cart).total)}
+            {money(totals(state.cart, products).total)}
           </span>
           <span>
             View cart <ArrowRight size={17} />
@@ -252,7 +252,7 @@ function HomePage({
   onOpen: (p: Product) => void;
   browse: (c?: string) => void;
 }) {
-  const { state, setState, notify } = useRyde();
+  const { state, setState, notify, products, categories } = useRyde();
   const [pnr, setPnr] = useState("");
   const [error, setError] = useState("");
   const activate = (value: string) => {
@@ -387,7 +387,7 @@ function HomePage({
           </button>
         </div>
         <div className="food-grid">
-          {[products[0], products[4], products[5], products[2]].map((p) => (
+          {[products[0], products[4], products[5], products[2]].filter((p): p is Product => Boolean(p)).map((p) => (
             <FoodCard key={p.id} product={p} onOpen={onOpen} />
           ))}
         </div>
@@ -409,24 +409,32 @@ function MenuPage({
   category: string;
   setCategory: (c: string) => void;
 }) {
+  const { products, categories } = useRyde();
   const [search, setSearch] = useState("");
   const [veg, setVeg] = useState(false);
   const [sort, setSort] = useState("recommended");
-  const filtered = products
-    .filter(
-      (p) =>
-        (category === "All" || p.category === category) &&
-        (!veg || p.veg) &&
-        p.name.toLowerCase().includes(search.toLowerCase()),
-    )
-    .sort((a, b) =>
-      sort === "low"
-        ? a.price - b.price
-        : sort === "high"
-          ? b.price - a.price
-          : 0,
-    );
+  const [filtered, setFiltered] = useState<Product[]>([]);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true); setSearchError("");
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams({ q: search, category: category === "All" ? "" : category,
+        diet: veg ? "vegetarian" : "", sort: sort === "low" ? "price-asc" : sort === "high" ? "price-desc" : "name", page: String(page), limit: "24" });
+      void fetch(`/api/catalog/search?${params}`, { cache: "no-store", signal: controller.signal })
+        .then(async response => { if (!response.ok) throw new Error(); return response.json(); })
+        .then(result => { if (!controller.signal.aborted) { setFiltered(result.products); setPages(result.pages); setTotal(result.total); } })
+        .catch(() => { if (!controller.signal.aborted) { setFiltered([]); setSearchError("Menu search is unavailable. Please try again."); } })
+        .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    }, 200);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [search, category, veg, sort, page]);
   const clear = () => {
+    setPage(1);
     setSearch("");
     setVeg(false);
     setSort("recommended");
@@ -447,7 +455,7 @@ function MenuPage({
           <Search size={18} />
           <input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setPage(1); setSearch(e.target.value); }}
             placeholder="Search for your comfort food..."
             aria-label="Search food by name"
           />
@@ -456,7 +464,7 @@ function MenuPage({
           <input
             type="checkbox"
             checked={veg}
-            onChange={(e) => setVeg(e.target.checked)}
+            onChange={(e) => { setPage(1); setVeg(e.target.checked); }}
           />
           <Leaf size={16} />
           Veg only
@@ -466,9 +474,9 @@ function MenuPage({
           <select
             aria-label="Sort by price"
             value={sort}
-            onChange={(e) => setSort(e.target.value)}
+            onChange={(e) => { setPage(1); setSort(e.target.value); }}
           >
-            <option value="recommended">Recommended</option>
+            <option value="recommended">Name</option>
             <option value="low">Price: low to high</option>
             <option value="high">Price: high to low</option>
           </select>
@@ -479,7 +487,7 @@ function MenuPage({
           <button
             className={cn("category-chip", category === c && "selected")}
             key={c}
-            onClick={() => setCategory(c)}
+            onClick={() => { setPage(1); setCategory(c); }}
           >
             {c}
           </button>
@@ -487,13 +495,14 @@ function MenuPage({
       </div>
       <div className="results-heading">
         <span>
-          {filtered.length} delicious{" "}
+          {total} delicious{" "}
           {filtered.length === 1 ? "option" : "options"}
         </span>
         <button className="text-link" onClick={clear}>
           Clear filters
         </button>
       </div>
+      <p role="status">{loading ? "Searching menu…" : searchError}</p>
       {filtered.length ? (
         <div className="food-grid">
           {filtered.map((p) => (
@@ -510,6 +519,7 @@ function MenuPage({
           </button>
         </div>
       )}
+      <nav aria-label="Menu pages"><button type="button" className="secondary" disabled={loading || page <= 1} onClick={() => setPage(p => p - 1)}>Previous</button> <span>Page {page} of {Math.max(1, pages)}</span> <button type="button" className="secondary" disabled={loading || page >= pages} onClick={() => setPage(p => p + 1)}>Next</button></nav>
       <p className="rating-note">
         All ratings and nutrition values are sample data. Images are
         representative.

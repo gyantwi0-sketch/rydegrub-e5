@@ -27,6 +27,9 @@ try {
     const response=await get(path);assert.equal(response.status,503,`${path} must fail closed without configuration`);
     assert.match(response.headers.get('cache-control'),/no-store/);
   }
+  const catalog=await get('/api/catalog'); assert.equal(catalog.status,200); assert.equal((await catalog.json()).mode,'demo');
+  const search=await get('/api/catalog/search?q=rice&limit=2'); assert.equal(search.status,200); assert.ok((await search.json()).products.length<=2);
+  const admin=await get('/api/admin/catalog',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); assert.equal(admin.status,503);
   const signup=await get('/api/v1/auth/register',{method:'POST',headers:{'Content-Type':'application/json',Origin:base},body:JSON.stringify({email:'fixture@example.test',name:'Test User',password:'not-a-real-password-fixture'})});
   assert.equal(signup.status,503);
   process.stdout.write('Compiled HTTP smoke checks passed: liveness, readiness and fail-closed private routes.\n');

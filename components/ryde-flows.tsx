@@ -18,7 +18,6 @@ import {
   journey,
   money,
   prepareReorder,
-  products,
   totals,
   type Order,
 } from "@/lib/rydegrub";
@@ -101,9 +100,9 @@ function Summary({
   );
 }
 export function CartPage({ navigate }: { navigate: Navigate }) {
-  const { state, quantity } = useRyde();
+  const { state, quantity, products } = useRyde();
   const items = products.filter((p) => state.cart[p.id]);
-  const t = totals(state.cart);
+  const t = totals(state.cart, products);
   return (
     <section className="page-section">
       <PageHeading
@@ -167,7 +166,7 @@ export function CartPage({ navigate }: { navigate: Navigate }) {
   );
 }
 export function CheckoutPage({ navigate }: { navigate: Navigate }) {
-  const { state, setState, ready } = useRyde();
+  const { state, setState, ready, products } = useRyde();
   const [form, setForm] = useState({
     name: state.profile.name,
     mobile: state.profile.mobile,
@@ -179,7 +178,7 @@ export function CheckoutPage({ navigate }: { navigate: Navigate }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const submitted = useRef(false);
-  const t = totals(state.cart);
+  const t = totals(state.cart, products);
   useEffect(() => {
     if (ready)
       setForm((f) => ({
@@ -372,13 +371,13 @@ export function CheckoutPage({ navigate }: { navigate: Navigate }) {
   );
 }
 function useReorder(navigate: Navigate) {
-  const { setState, notify } = useRyde();
+  const { setState, notify, products } = useRyde();
   const [pending, setPending] = useState<Order | null>(null);
-  const preview = pending ? prepareReorder(pending.items) : null;
+  const preview = pending ? prepareReorder(pending.items, products) : null;
   const confirm = () => {
     if (!pending) return;
     // Re-read the catalog when confirming, not just when opening the preview.
-    const current = prepareReorder(pending.items);
+    const current = prepareReorder(pending.items, products);
     if (!Object.keys(current.cart).length) return;
     setState((s) => ({ ...s, cart: current.cart, selected: true }));
     setPending(null);

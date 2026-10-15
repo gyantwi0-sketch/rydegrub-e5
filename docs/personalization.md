@@ -1,6 +1,6 @@
 # Consented meal suggestions (#50)
 
-The home page uses server-side, explainable preference matching. It does not claim AI inference, learn browsing behaviour, or use PNRs, contact details, order history or inferred health traits. There is no external model/provider request and no recommendation history table. Current catalog metadata remains the application's sample menu; catalog publication, real stock and food-label verification remain separate work. Suggestions never authorize checkout or guarantee availability or allergy safety.
+The home page uses server-side, explainable preference matching. It does not claim AI inference, learn browsing behaviour, or use PNRs, contact details, order history or inferred health traits. There is no external model/provider request and no recommendation history table. Catalog metadata comes from the server catalog (read-only samples when no managed catalog is configured); catalog publication, real stock and food-label verification remain separate work. Suggestions never authorize checkout or guarantee availability or allergy safety.
 
 ## Account choice
 
