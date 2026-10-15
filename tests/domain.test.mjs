@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { orderStatus, prepareReorder, statuses, totals } from "../lib/rydegrub.ts";
+import { prepareReorder, totals } from "../lib/rydegrub.ts";
 import { categories, products } from "../lib/server/catalog-seed.mjs";
 
 test("catalog identifiers are unique and categories are defined", () => {
@@ -36,16 +36,6 @@ test("unknown IDs do not contribute to a total", () => {
   });
 });
 
-test("demo order status advances at fifteen-second boundaries", () => {
-  const createdAt = 1_000_000;
-  assert.equal(statuses.length, 5);
-  assert.equal(orderStatus(createdAt, createdAt - 1), 0);
-  assert.equal(orderStatus(createdAt, createdAt + 14_999), 0);
-  assert.equal(orderStatus(createdAt, createdAt + 15_000), 1);
-  assert.equal(orderStatus(createdAt, createdAt + 59_999), 3);
-  assert.equal(orderStatus(createdAt, createdAt + 60_000), 4);
-  assert.equal(orderStatus(createdAt, createdAt + 600_000), 4);
-});
 
 test("reorder uses current prices and flags changed allergen information", () => {
   const previous = { ...products[0], price: 99, allergens: "None known" };

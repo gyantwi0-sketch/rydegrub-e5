@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import type { PageName } from './ryde-app';
 
 type Navigate = (page: PageName, id?: string) => void;
-type Snapshot = { id: string; stage: string; station: string; eta: number | null; updatedAt: number; version: number };
+type Snapshot = { id: string; stage: string; station: string; eta: number | null; updatedAt: number; version: number; events?: { version: number; stage: string; station: string; eta: number | null; recordedAt: number; source: 'operations' | 'migration' }[]; hasEarlierEvents?: boolean };
 const labels: Record<string, string> = {
   confirmed: 'Confirmed', preparing: 'Preparing', packed: 'Packed',
   arriving: 'Arriving', delivered: 'Delivered', cancelled: 'Cancelled',
@@ -110,8 +110,18 @@ export function TrackingPage({ id, navigate }: { id: string; navigate: Navigate 
     {snapshot && <section className="panel" aria-label="Fulfilment status">
       <h2>{labels[snapshot.stage] || snapshot.stage}</h2>
       <p>Delivery station: {snapshot.station}</p>
-      <p>{snapshot.eta ? `Estimated arrival: ${new Date(snapshot.eta).toLocaleString()}` : 'Arrival estimate pending'}</p>
+      <p>{['delivered', 'cancelled'].includes(snapshot.stage) ? 'This delivery is complete or cancelled.' : snapshot.eta ? `Estimated arrival: ${new Date(snapshot.eta).toLocaleString()}` : 'Arrival estimate pending'}</p>
       <p className="muted small">Updated {new Date(snapshot.updatedAt).toLocaleString()}</p>
+      <h3>Status history</h3>
+      {snapshot.hasEarlierEvents && <p>Showing the latest 100 updates.</p>}
+      <ol aria-label="Recorded fulfilment events">
+        {snapshot.events?.map(event => <li key={event.version}>
+          <strong>{labels[event.stage] || event.stage}</strong> · {event.station}
+          <p><time dateTime={new Date(event.recordedAt).toISOString()}>{new Date(event.recordedAt).toLocaleString()}</time>
+            {event.source === 'migration' && ' · Previously recorded status; earlier history unavailable'}</p>
+        </li>)}
+      </ol>
+      <p className="muted small">Progress changes only when operations records an update. Arrival times are estimates.</p>
     </section>}
     {!isOwner && <form className="panel" onSubmit={event => {
       event.preventDefault(); setCode({ token: entry.trim() }); setEntry('');
@@ -143,3 +153,4 @@ export function TrackingPage({ id, navigate }: { id: string; navigate: Navigate 
     <button type="button" className="text-link" onClick={() => navigate('orders')}>Back to orders</button>
   </section>;
 }
+

@@ -1,15 +1,15 @@
 # External-provider resilience (#28)
 
-The server uses a trusted outbound adapter in `lib/server/provider-resilience.mjs` for external SMS, PNR and payment **provider client calls**. The only connected call today is the profile OTP/SMS `sendPhoneCode` adapter. PNR lookup and payment are NOT integrated yet and still need approved provider contracts and credentials. This change needs no human provider verification to test; unit tests supply a controlled local transport implementation.
+The server uses a trusted outbound adapter in `lib/server/provider-resilience.mjs` for external SMS, email, password-screening, PNR and payment **provider client calls**. Connected calls include profile OTP/SMS, account verification/recovery email, and padded password-breach prefix screening. PNR lookup and payment are NOT integrated yet and still need approved provider contracts and credentials. This change needs no human provider verification to test; unit tests supply a controlled local transport implementation.
 
 ## Security and reliability contract
 
 - Outbound URLs must be **server configured**, HTTPS, without URL credentials, query strings, fragments or non-default ports. Never forward arbitrary client-supplied URLs into this module.
-- Each request has a bounded AbortSignal timeout (default five seconds, maximum ten seconds) and forbids HTTP redirects. Errors are converted to a generic 503; response bodies, access tokens, payment details, codes, PNRs and stack traces are never logged or returned.
+- Each request has a bounded deadline covering both headers and the complete response body (default five seconds, maximum ten seconds) and forbids HTTP redirects. Errors are converted to a generic 503; response bodies, access tokens, payment details, codes, PNRs and stack traces are never logged or returned.
 - GET and HEAD are retried up to three times **only** on network failure or 429/500/502/503/504. Backoff is bounded at 100ms and 200ms for the default three attempts. No retries occur for nontransient responses.
 - POST is made **once only**, including SMS sends. Payment collection, checkout, inventory holds and status-changing requests must not be retried without provider idempotency contracts; do not use the GET retry behavior for mutations.
 - Independent provider-name circuit breakers open after three consecutive failed logical calls, reject requests without contacting an upstream while open (30-second cooldown), then allow a recovery probe. A successful recovery resets the breaker. A blocked request is a generic 503, not an authorization bypass.
-- Structured telemetry includes only fixed provider name (`sms`, `pnr`, `payment`), HTTP method, outcome enum, attempt count and bounded request duration. Do not add per-account, request URL, phone number, IP, headers, OTPs, raw PNRs or gateway response details. Hosting/telemetry instrumentation must independently suppress sensitive HTTP bodies and headers.
+- Structured telemetry includes only fixed provider name (`sms`, `email`, `password-screening`, `pnr`, `payment`), HTTP method, outcome enum, attempt count and bounded request duration. Do not add per-account, request URL, phone number, IP, headers, OTPs, raw PNRs or gateway response details. Hosting/telemetry instrumentation must independently suppress sensitive HTTP bodies and headers.
 
 ## Deployment and operations
 
@@ -20,3 +20,6 @@ Add dashboards for aggregate error rate, request duration and open-circuit count
 Run `pnpm test`, `pnpm lint`, `pnpm typecheck`, and `pnpm build`. Before any real payment or PNR integration, validate the provider's webhook/idempotency/security contract, rate limits, transport and outages using sandbox credentials managed outside GitHub.
 
 #28 remains open until the real PNR and payment providers also adopt and verify this adapter. This is a safe, mergeable piece of its implementation.
+
+
+Successful bodies are buffered with a 256 KiB default cap (configurable up to 1 MiB); password screening uses 200,000 bytes. Oversized, stalled or failed streams count as provider failures. Error responses are cancelled without consuming their contents. Email and SMS writes never retry, including when their response body fails after headers; delivery may have happened and must not be repeated automatically. GET screening has at most three attempts, each with a three-second total deadline plus bounded backoff. Metrics measure the complete body read. Transport tests require no live credentials.

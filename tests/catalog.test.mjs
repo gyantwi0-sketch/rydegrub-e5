@@ -110,3 +110,33 @@ test('search HTTP validates repeated/unknown parameters and admin delete rejects
   const removed=await catalogHandlers.remove(new Request('https://example.test/api/admin/catalog',{method:'DELETE',headers:{'Content-Type':'application/json',Authorization:`Bearer ${process.env.CATALOG_ADMIN_TOKEN}`},body:JSON.stringify({id:seed[0].id,unexpected:true})}));
   assert.equal(removed.status,400);
 });
+
+test('unconfigured catalog is explicitly read-only demo and partial configuration never falls back', async t => {
+  const previous = { root: process.env.CATALOG_DATA_DIR, token: process.env.CATALOG_ADMIN_TOKEN };
+  delete process.env.CATALOG_DATA_DIR; delete process.env.CATALOG_ADMIN_TOKEN;
+  t.after(() => {
+    if (previous.root === undefined) delete process.env.CATALOG_DATA_DIR; else process.env.CATALOG_DATA_DIR = previous.root;
+    if (previous.token === undefined) delete process.env.CATALOG_ADMIN_TOKEN; else process.env.CATALOG_ADMIN_TOKEN = previous.token;
+  });
+  const get = () => catalogHandlers.list(new Request('https://example.test/api/catalog'));
+  const response = await get(); assert.equal(response.status,200);
+  assert.equal((await response.json()).mode,'demo');
+  const denied = await catalogHandlers.create(new Request('https://example.test/api/admin/catalog', {
+    method:'POST', headers:{'Content-Type':'application/json',Authorization:'Bearer test-only-catalog-admin-token-123456'},body:JSON.stringify(sample),
+  })); assert.equal(denied.status,503);
+  assert.equal((await (await get()).json()).products.some(p=>p.id===sample.id),false);
+  process.env.CATALOG_DATA_DIR = '/private/unused';
+  assert.equal((await get()).status,503);
+});
+
+test('catalog changes produce private audit events and audit failure rolls back the product write', t => {
+  const root = mkdtempSync(join(tmpdir(),'catalog-audit-')), db = new CatalogStore(root);
+  t.after(()=>{db.db.close();rmSync(root,{recursive:true,force:true});});
+  db.create(sample); db.update({...sample,price:321});
+  const audit = db.db.prepare('SELECT event,subject FROM security_audit').all();
+  assert.deepEqual(audit.map(e=>e.event),['catalog.created','catalog.changed']);
+  assert.ok(audit.every(e=>e.subject===sample.id));
+  db.db.exec("CREATE TRIGGER reject_audit BEFORE INSERT ON security_audit BEGIN SELECT RAISE(ABORT,'test'); END;");
+  assert.throws(()=>db.update({...sample,price:654}));
+  assert.equal(db.list().find(p=>p.id===sample.id).price,321);
+});

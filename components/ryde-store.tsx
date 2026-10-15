@@ -22,6 +22,7 @@ const initial: State = {
 const Context = createContext<null | {
 	state: State;
 	products: Product[];
+	catalogMode: string;
 	categories: string[];
 	ready: boolean;
 	notice: string;
@@ -42,17 +43,14 @@ function restore(raw: string, catalog: Product[]): State {
 		profile: {
 			name: "",
 			mobile: "",
-			preferences: Array.isArray(x?.preferences)
-				? x.preferences.filter((p: unknown) =>
-						["Vegetarian", "High-protein", "Mild spice"].includes(String(p)),
-					)
-				: [],
+			preferences: [],
 		},
 	};
 }
 export function RydeProvider({ children }: { children: ReactNode }) {
 	const [state, setState] = useState<State>(initial),
 		[products, setProducts] = useState<Product[]>([]),
+		[catalogMode, setCatalogMode] = useState("loading"),
 		[categories, setCategories] = useState<string[]>(["All"]),
 		[ready, setReady] = useState(false),
 		[notice, setNotice] = useState("");
@@ -61,7 +59,7 @@ export function RydeProvider({ children }: { children: ReactNode }) {
 		(async () => {
 			let catalog: Product[] = [];
 			try {
-				const r = await fetch("/api/catalog", { cache: "no-store" });
+				const r = await fetch("/api/catalog", { cache: "no-store", signal: AbortSignal.timeout(5000) });
 				if (!r.ok) throw Error();
 				const d = await r.json();
 				if (!Array.isArray(d.products) || !Array.isArray(d.categories))
@@ -69,13 +67,16 @@ export function RydeProvider({ children }: { children: ReactNode }) {
 				catalog = d.products;
 				if (active) {
 					setProducts(catalog);
+					setCatalogMode(d.mode);
 					setCategories(d.categories);
 				}
 			} catch {
-				if (active)
+				if (active) {
+					setCatalogMode("unavailable");
 					setNotice(
 						"The menu is temporarily unavailable. Please try again later.",
 					);
+				}
 				return;
 			}
 			if (!active) return;
@@ -100,7 +101,6 @@ export function RydeProvider({ children }: { children: ReactNode }) {
 					JSON.stringify({
 						cart: state.cart,
 						selected: state.selected,
-						preferences: state.profile.preferences,
 					}),
 				);
 			} catch {
@@ -128,6 +128,7 @@ export function RydeProvider({ children }: { children: ReactNode }) {
 			value={{
 				state,
 				products,
+				catalogMode,
 				categories,
 				ready,
 				notice,

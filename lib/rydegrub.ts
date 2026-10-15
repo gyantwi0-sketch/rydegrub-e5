@@ -101,13 +101,3 @@ export const totals = (cart: Cart, catalog: readonly Product[]) => {
   const delivery = subtotal === 0 || subtotal >= 399 ? 0 : 20;
   return { subtotal, delivery, total: subtotal + delivery };
 };
-export const orderStatus = (createdAt: number, now: number) =>
-  Math.min(4, Math.max(0, Math.floor((now - createdAt) / 15000)));
-export const statuses = [
-  "Confirmed",
-  "Preparing",
-  "Packed",
-  "At your coach",
-  "Delivered",
-];
-
