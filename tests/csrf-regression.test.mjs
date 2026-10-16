@@ -26,7 +26,8 @@ test('unsafe API routes are registered through server-side security wrappers', (
   // Fail CI on a newly added cookie-authenticated mutation unless its route
   // has been explicitly classified and added to the CSRF policy.
   const paths = readdirSync(root, { recursive: true })
-    .filter(path => path.endsWith('route.ts'));
+    .filter(path => path.endsWith('route.ts'))
+    .map(path => path.replace(/\\/g, '/'));
   const methods = /export (?:const|async function) (POST|PUT|PATCH|DELETE)\b/g;
   const classified = new Map([
     ['v1/auth/register/route.ts', 'account.register'],

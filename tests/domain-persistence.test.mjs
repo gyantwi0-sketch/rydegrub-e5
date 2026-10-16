@@ -105,3 +105,42 @@ test('unsupported database schema fails closed, never silently resets user data'
   db.db.exec('PRAGMA user_version=99');
   assert.throws(() => new DomainStore(dir), { status: 503 });
 });
+
+test('ensureAccount idempotently links accounts and rejects mismatched identities or invalid subjects', t => {
+  const { db } = fixture(t);
+  const subjectA = randomUUID();
+  const subjectB = randomUUID();
+
+  // 1. New account links successfully
+  const linked = db.ensureAccount(OWNER_A, subjectA);
+  assert.deepEqual(linked, { owner: OWNER_A, subject: subjectA });
+  const row = db.db.prepare('SELECT owner, subject FROM accounts WHERE owner=?').get(OWNER_A);
+  assert.equal(row.owner, OWNER_A);
+  assert.equal(row.subject, subjectA);
+
+  // 2. Audit event recorded
+  const audit = db.db.prepare('SELECT event, actor_class, owner_key FROM security_audit WHERE event=?').all('account.domain_linked');
+  assert.ok(audit.some(e => e.owner_key === OWNER_A && e.actor_class === 'service'));
+
+  // 3. Repeated call with exact same owner and subject is idempotent
+  const reLinked = db.ensureAccount(OWNER_A, subjectA);
+  assert.deepEqual(reLinked, { owner: OWNER_A, subject: subjectA });
+
+  // 4. Same owner, different subject -> 409
+  assert.throws(() => db.ensureAccount(OWNER_A, subjectB), { status: 409 });
+
+  // 5. Different owner, same subject -> 409
+  assert.throws(() => db.ensureAccount(OWNER_B, subjectA), { status: 409 });
+
+  // 6. Validation: invalid owner -> 401
+  assert.throws(() => db.ensureAccount('short-owner', subjectB), { status: 401 });
+  assert.throws(() => db.ensureAccount(null, subjectB), { status: 401 });
+
+  // 7. Validation: invalid subject -> 400
+  assert.throws(() => db.ensureAccount(OWNER_B, 'not-a-uuid'), { status: 400 });
+  assert.throws(() => db.ensureAccount(OWNER_B, null), { status: 400 });
+
+  // 8. Other account can be linked independently
+  const second = db.ensureAccount(OWNER_B, subjectB);
+  assert.deepEqual(second, { owner: OWNER_B, subject: subjectB });
+});

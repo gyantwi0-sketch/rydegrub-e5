@@ -36,13 +36,13 @@ test('metrics require private bearer token and reject query credentials',async()
   assert.equal((await operationsHandlers({env:()=>({})}).metrics(new Request('https://app.test'))).status,503);
 });
 test('readiness checks real local schemas and fails on missing or unsupported databases',async t=>{
-  const root=mkdtempSync(join(tmpdir(),'ryde-ready-'));t.after(()=>rmSync(root,{recursive:true,force:true}));
+  const root=mkdtempSync(join(tmpdir(),'ryde-ready-'));
   const {publicKey}=generateKeyPairSync('rsa',{modulusLength:2048});
   const env={NODE_ENV:'test',PROFILE_OTP_PEPPER:'a-secure-test-pepper-with-32-characters'};
   for(const prefix of ['MEDIA','PROFILE','TRACKING']) Object.assign(env,{[`${prefix}_APP_ORIGIN`]:'https://app.test',[`${prefix}_TOKEN_ISSUER`]:'https://issuer.test',[`${prefix}_TOKEN_AUDIENCE`]:prefix,[`${prefix}_TOKEN_PUBLIC_KEY`]:publicKey.export({type:'spki',format:'pem'}),[`${prefix}_DATA_DIR`]:join(root,prefix)});
   await assert.rejects(dependencyReadiness(env));
   const media=new MediaStore(env.MEDIA_DATA_DIR),profile=new ProfileStore(env.PROFILE_DATA_DIR),tracking=new TrackingStore(env.TRACKING_DATA_DIR);
-  t.after(()=>{media.close();profile.close();tracking.close();});
+  t.after(()=>{media.close();profile.close();tracking.close();rmSync(root,{recursive:true,force:true});});
   assert.equal(await dependencyReadiness(env),true);
   profile.db.exec('UPDATE security_audit_meta SET version=999');await assert.rejects(dependencyReadiness(env));
   profile.db.exec('UPDATE security_audit_meta SET version=1');

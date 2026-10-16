@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { CatalogStore, validateProduct } from '../lib/server/catalog-store.mjs';
-import { catalogHandlers } from '../lib/server/catalog-http.mjs';
+import { catalogHandlers, resetCatalogStores } from '../lib/server/catalog-http.mjs';
 import { products as seed } from '../lib/server/catalog-seed.mjs';
 
 const sample = { ...seed[0], id: 'catalog-test-meal', name: 'Catalog Test Meal' };
@@ -36,6 +36,7 @@ test('public catalog and admin API enforce configuration and authorization', asy
   t.after(() => {
     if (oldRoot === undefined) delete process.env.CATALOG_DATA_DIR; else process.env.CATALOG_DATA_DIR = oldRoot;
     if (oldToken === undefined) delete process.env.CATALOG_ADMIN_TOKEN; else process.env.CATALOG_ADMIN_TOKEN = oldToken;
+    resetCatalogStores();
     rmSync(root, { recursive: true, force: true });
   });
   const request = (method, body, token = '') => new Request('https://example.test/api/admin/catalog', {
@@ -101,7 +102,7 @@ test('search HTTP validates repeated/unknown parameters and admin delete rejects
   const root=mkdtempSync(join(tmpdir(),'ryde-search-http-'));
   const oldRoot=process.env.CATALOG_DATA_DIR,oldToken=process.env.CATALOG_ADMIN_TOKEN;
   process.env.CATALOG_DATA_DIR=root;process.env.CATALOG_ADMIN_TOKEN='test-only-catalog-admin-token-123456';
-  t.after(()=>{if(oldRoot===undefined)delete process.env.CATALOG_DATA_DIR;else process.env.CATALOG_DATA_DIR=oldRoot;if(oldToken===undefined)delete process.env.CATALOG_ADMIN_TOKEN;else process.env.CATALOG_ADMIN_TOKEN=oldToken;rmSync(root,{recursive:true,force:true});});
+  t.after(()=>{if(oldRoot===undefined)delete process.env.CATALOG_DATA_DIR;else process.env.CATALOG_DATA_DIR=oldRoot;if(oldToken===undefined)delete process.env.CATALOG_ADMIN_TOKEN;else process.env.CATALOG_ADMIN_TOKEN=oldToken;resetCatalogStores();rmSync(root,{recursive:true,force:true});});
   for(const query of ['q=a&q=b','limit=-1','page=1.5','__proto__=x','token=secret','sort=wrong']) {
     assert.equal((await catalogHandlers.search(new Request(`https://example.test/api/catalog/search?${query}`))).status,400);
   }

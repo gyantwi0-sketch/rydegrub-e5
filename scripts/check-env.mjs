@@ -36,6 +36,10 @@ export function checkEnvironment(env = process.env) {
         typeof token !== 'string' || token.length < 32)
       throw new Error('Catalog service is not configured.');
   }
+  if (env.DOMAIN_DATA_DIR !== undefined) {
+    if (typeof env.DOMAIN_DATA_DIR !== 'string' || !isAbsolute(env.DOMAIN_DATA_DIR))
+      throw new Error('Domain service storage must use a private absolute directory.');
+  }
   return true;
 }
 
