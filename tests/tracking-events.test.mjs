@@ -8,9 +8,14 @@ import { DatabaseSync } from 'node:sqlite';
 import { TrackingStore, RETENTION } from '../lib/server/tracking-store.mjs';
 const owner = 'a'.repeat(64);
 const snapshot = { stage: 'confirmed', station: 'Kota Junction', eta: null };
+let currentDb = null;
 function setup(t) {
   const root = mkdtempSync(join(tmpdir(), 'tracking-events-'));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  t.after(() => {
+    try { currentDb?.close(); } catch {}
+    currentDb = null;
+    rmSync(root, { recursive: true, force: true });
+  });
   return root;
 }
 
@@ -31,7 +36,8 @@ test('elapsed time cannot advance status; actual events survive restart with exa
 });
 
 test('event writes are atomic, cannot be replaced or deleted independently, and follow order retention', t => {
-  const db = new TrackingStore(setup(t)); t.after(() => db.close());
+  const db = new TrackingStore(setup(t));
+  currentDb = db;
   const now = Date.now(), order = db.create(owner, snapshot, now);
   db.db.exec(`CREATE TRIGGER reject_event BEFORE INSERT ON tracking_events BEGIN SELECT RAISE(ABORT,'test'); END;`);
   assert.throws(() => db.update(order.id, 1, { ...snapshot, stage: 'preparing' }, now + 1));
@@ -64,7 +70,8 @@ test('v1 migration records only the existing snapshot and is idempotent', t => {
 });
 
 test('stale versions, backward times, skipped stages and terminal edits create no history', t => {
-  const db = new TrackingStore(setup(t)); t.after(() => db.close());
+  const db = new TrackingStore(setup(t));
+  currentDb = db;
   const now = Date.now(), order = db.create(owner, snapshot, now);
   assert.throws(() => db.update(order.id, 1, { ...snapshot, stage: 'delivered' }, now + 1), { status: 409 });
   assert.throws(() => db.update(order.id, 1, { ...snapshot, stage: 'preparing' }, now - 1), { status: 409 });
@@ -75,7 +82,8 @@ test('stale versions, backward times, skipped stages and terminal edits create n
 });
 
 test('history projection is bounded, chronological, and purge removes its retained rows', t => {
-  const db = new TrackingStore(setup(t)); t.after(() => db.close());
+  const db = new TrackingStore(setup(t));
+  currentDb = db;
   const now = Date.now(), order = db.create(owner, snapshot, now);
   for (let i = 1; i <= 105; i++) db.update(order.id, i, snapshot, now + i);
   const result = db.readOwner(order.id, owner, now + 106);
