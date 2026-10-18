@@ -1,8 +1,9 @@
 # Authenticated cart and unpaid draft API
 
 This implements the backend portion of #4 and advances #1/#2/#12/#14/#44.
-The browser cart and checkout remain explicit demos. Do not close their integration
-issues or represent these drafts as confirmed deliveries or payable orders.
+The browser cart now uses guest or account persistence when DOMAIN_DATA_DIR is configured.
+Unconfigured previews use a clearly labelled in-memory sample cart. Live checkout remains
+blocked pending provider/fulfilment integration; drafts are not paid orders.
 
 ## Requirements
 
@@ -16,8 +17,8 @@ creates the immutable domain identity mapping; conflicting mappings fail closed.
 The browser must never submit owner, subject, account ID, price or status.
 
 DomainStore's operational catalog is separate from CatalogStore's browsing menu.
-A trusted provisioning/import integration must map real station/vendor/SKU data
-before these APIs can order browsed products. Nothing automatically seeds sample
+The bearer-authenticated /api/admin/commerce provisioning API maps real station/vendor/SKU
+data before these APIs can accept browsed products. Nothing automatically seeds sample
 products or converts a fictional browser journey into a verified journey. An
 empty/unprovisioned domain catalog rejects cart items. Approved PNR integration
 must create owner-bound journeys. These are explicit rollout blockers.
@@ -39,6 +40,8 @@ have Content-Type application/json and fit within 8192 bytes; read timeout is 3s
 | POST | /api/orders/drafts | `{journeyId,cartVersion,quoteHash}` + Idempotency-Key UUIDv4 header | 201 `{draft,payable:false}` |
 | GET | /api/orders/drafts/{id} | none | owner-only draft with frozen item prices |
 
+Account cart PUT and merge POST require X-Ryde-Cart-Context from GET /api/cart.
+This account-bound revision context rejects stale browser writes after an account switch.
 PUT and POST require exact application Origin, plus same-origin Sec-Fetch-Site
 when supplied. Authentication is a Secure/HttpOnly cookie; client code must not
 read it. Cart updates replace the complete cart, support clearing with [], and
@@ -59,11 +62,11 @@ including after a catalog price change. Reuse with changed fields conflicts.
 Expired keys conflict rather than creating a second order. Draft reads check the
 owner and draft state and expose no passenger data or payment credentials.
 
-## Frontend integration acceptance (still pending)
+## Remaining ordering acceptance
 
-1. Replace browser-only account carts with GET/PUT, including empty/loading/error states.
+1. Verify GET/PUT account cart persistence and empty/loading/error states on the target host.
 2. Never overwrite a server cart automatically with a local/guest cart at login.
-3. Implement the separate reviewed guest-cart lifecycle before supporting a merge.
+3. Test the implemented guest-cart lifecycle and explicit merge UI on the target host.
 4. Review quote changes and persist the current idempotency key only for retrying
    the same draft request. Do not show success as payment or vendor acceptance.
 5. Test two browsers, logout/login as another user, stale tabs, changed prices,

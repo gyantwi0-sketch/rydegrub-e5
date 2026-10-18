@@ -32,7 +32,7 @@ function seeded(db) {
 
 test('schema migrates transactionally with FK protection and persists across restart', t => {
   const { db, dir } = fixture(t);
-  assert.equal(db.db.prepare('PRAGMA user_version').get().user_version, 3);
+  assert.equal(db.db.prepare('PRAGMA user_version').get().user_version, 4);
   assert.equal(db.db.prepare('PRAGMA foreign_keys').get().foreign_keys, 1);
   const tables = db.db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(r => r.name);
   for (const table of ['accounts','stations','vendors','catalog','journeys','carts',
@@ -144,3 +144,4 @@ test('ensureAccount idempotently links accounts and rejects mismatched identitie
   const second = db.ensureAccount(OWNER_B, subjectB);
   assert.deepEqual(second, { owner: OWNER_B, subject: subjectB });
 });
+

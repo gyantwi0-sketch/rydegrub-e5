@@ -1,4 +1,5 @@
 "use client";
+import { CartStatus } from "./cart-status";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -100,7 +101,7 @@ function Summary({
   );
 }
 export function CartPage({ navigate }: { navigate: Navigate }) {
-  const { state, quantity, products } = useRyde();
+  const { state, quantity, products, serverCart } = useRyde();
   const items = products.filter((p) => state.cart[p.id]);
   const t = totals(state.cart, products);
   return (
@@ -110,6 +111,7 @@ export function CartPage({ navigate }: { navigate: Navigate }) {
         title="Your travel companions."
         description="A delicious journey is just a few bites away."
       />
+      <CartStatus />
       {!items.length ? (
         <EmptyState
           title="Your next meal is waiting."
@@ -151,13 +153,13 @@ export function CartPage({ navigate }: { navigate: Navigate }) {
           <Summary {...t}>
             <button
               className="primary full-width"
-              disabled={!items.length}
+              disabled={!items.length || serverCart.busy}
               onClick={() => navigate("checkout")}
             >
               Continue to checkout <ArrowRight size={17} />
             </button>
             <p className="muted small">
-              Demo order only. No payment will be collected.
+              {serverCart.mode === "demo" ? "Demo order only. No payment will be collected." : "Saved cart. Live checkout requires a verified journey."}
             </p>
           </Summary>
         </div>
@@ -166,7 +168,7 @@ export function CartPage({ navigate }: { navigate: Navigate }) {
   );
 }
 export function CheckoutPage({ navigate }: { navigate: Navigate }) {
-  const { state, setState, ready, products } = useRyde();
+  const { state, setState, ready, products, serverCart } = useRyde();
   const [form, setForm] = useState({
     name: state.profile.name,
     mobile: state.profile.mobile,
@@ -232,6 +234,7 @@ export function CheckoutPage({ navigate }: { navigate: Navigate }) {
     setState((s) => ({ ...s, orders: [order, ...s.orders], cart: {} }));
     navigate("demo-tracking", order.id);
   };
+  if (serverCart.mode !== "demo") return <section className="page-section"><h1>Review your saved cart</h1><CartStatus /><p>Live checkout needs a verified journey and eligible delivery stop. No payment has been collected.</p><button type="button" className="secondary" onClick={() => navigate("cart")}>Back to cart</button></section>;
   if (!ready)
     return <section className="page-section">Loading your journey…</section>;
   if (!t.subtotal)
@@ -371,15 +374,16 @@ export function CheckoutPage({ navigate }: { navigate: Navigate }) {
   );
 }
 function useReorder(navigate: Navigate) {
-  const { setState, notify, products } = useRyde();
+  const { setState, notify, products, replaceCart } = useRyde();
   const [pending, setPending] = useState<Order | null>(null);
   const preview = pending ? prepareReorder(pending.items, products) : null;
-  const confirm = () => {
+  const confirm = async () => {
     if (!pending) return;
     // Re-read the catalog when confirming, not just when opening the preview.
     const current = prepareReorder(pending.items, products);
     if (!Object.keys(current.cart).length) return;
-    setState((s) => ({ ...s, cart: current.cart, selected: true }));
+    if (!(await replaceCart(current.cart))) return;
+    setState((s) => ({ ...s, selected: true }));
     setPending(null);
     notify("Cart updated with the current menu. Review it before checkout.");
     navigate("cart");
@@ -630,4 +634,5 @@ export function ProfilePage() {
     </section>
   );
 }
+
 
