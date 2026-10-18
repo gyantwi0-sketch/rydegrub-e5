@@ -23,7 +23,7 @@ try {
   const live=await get('/api/health/live'); assert.deepEqual(await live.json(),{status:'alive'});
   assert.match(live.headers.get('cache-control'),/no-store/);
   const readiness=await get('/api/health/ready');assert.equal(readiness.status,503);assert.deepEqual(await readiness.json(),{status:'unavailable'});
-  for(const path of ['/api/profile','/api/profile/personalization','/api/profile/recommendations','/api/media','/api/orders/tracking','/api/operations/metrics','/api/v1/auth/session']){
+  for(const path of ['/api/cart','/api/cart/quote','/api/orders/drafts/not-an-id','/api/profile','/api/profile/personalization','/api/profile/recommendations','/api/media','/api/orders/tracking','/api/operations/metrics','/api/v1/auth/session']){
     const response=await get(path);assert.equal(response.status,503,`${path} must fail closed without configuration`);
     assert.match(response.headers.get('cache-control'),/no-store/);
   }
@@ -36,3 +36,4 @@ try {
 } finally {
   if(!exit){const ended=once(child,'exit');child.kill('SIGTERM');const timer=setTimeout(()=>child.kill('SIGKILL'),5000);await ended;clearTimeout(timer);}
 }
+

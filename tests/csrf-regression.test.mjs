@@ -38,6 +38,8 @@ test('unsafe API routes are registered through server-side security wrappers', (
     ['v1/auth/password/request/route.ts', 'account.requestReset'],
     ['v1/auth/password/reset/route.ts', 'account.reset'],
 
+    ['cart/route.ts', 'commerce.replaceCart'],
+    ['orders/drafts/route.ts', 'commerce.createDraft'],
     ['media/route.ts', 'media.upload'],
     ['media/[id]/route.ts', 'media.remove'],
     ['profile/route.ts', 'profile.update'],
@@ -70,4 +72,5 @@ test('unsafe API routes are registered through server-side security wrappers', (
   assert.match(tracking, /request\.method !== 'GET'\) sameOrigin\(request, settings\)/);
   assert.match(profile, /request\.method !== 'GET'\) sameOrigin\(request, settings\)/);
 });
+
 
