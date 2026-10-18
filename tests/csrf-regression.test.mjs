@@ -38,6 +38,8 @@ test('unsafe API routes are registered through server-side security wrappers', (
     ['v1/auth/password/request/route.ts', 'account.requestReset'],
     ['v1/auth/password/reset/route.ts', 'account.reset'],
 
+    ['guest/cart/route.ts', 'guest.create'],
+    ['cart/merge/route.ts', 'commerce.mergeGuest'],
     ['cart/route.ts', 'commerce.replaceCart'],
     ['orders/drafts/route.ts', 'commerce.createDraft'],
     ['media/route.ts', 'media.upload'],
@@ -57,6 +59,10 @@ test('unsafe API routes are registered through server-side security wrappers', (
     const methodsFound = [...source.matchAll(methods)];
     if (!methodsFound.length) continue;
     found += methodsFound.length;
+    if (path === 'admin/commerce/route.ts') {
+      assert.match(source, /commerceCatalog.provision/);
+      continue; // Explicit bearer-only provisioning, never cookie-authorized.
+    }
     if (path === catalogBearerOnly) {
       assert.match(source, /catalogHandlers/);
       continue; // Bearer-only service credentials, not a cookie session.

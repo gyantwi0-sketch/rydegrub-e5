@@ -12,6 +12,14 @@ import {
 } from "lucide-react";
 import { useRyde } from "./ryde-store";
 
+function sessionChanged() {
+  window.dispatchEvent(new Event("ryde-session"));
+  if (typeof BroadcastChannel !== "undefined") {
+    const channel = new BroadcastChannel("ryde-session");
+    channel.postMessage("changed"); channel.close();
+  }
+}
+
 type AuthPage = "home" | "signin" | "signup";
 type Errors = Record<string, string>;
 
@@ -204,7 +212,7 @@ export function SignInPage({ navigate }: { navigate: (p: AuthPage) => void }) {
     async (v) => {
       const result = await accountRequest("signin", { email: v.email.trim(), password: v.password });
       notify(result.account.verified ? "Signed in" : "Signed in. Please verify your email.");
-      window.dispatchEvent(new Event("ryde-session"));
+      sessionChanged();
     },
   );
   return (
@@ -348,7 +356,7 @@ function AccountTools() {
   }, []);
   async function run(action: string, body: Record<string, string>) {
     setBusy(true); setMessage("");
-    try { const result = await accountRequest(action, body); setMessage(result.message || "Signed out."); setToken(""); setPassword(""); window.dispatchEvent(new Event("ryde-session")); }
+    try { const result = await accountRequest(action, body); setMessage(result.message || "Signed out."); setToken(""); setPassword(""); sessionChanged(); }
     catch (error) { setMessage(error instanceof Error ? error.message : "Request failed."); }
     finally { setBusy(false); }
   }
@@ -370,3 +378,4 @@ function AccountTools() {
     <p role="status">{message}</p>
   </section>;
 }
+

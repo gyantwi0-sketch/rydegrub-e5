@@ -1,3 +1,4 @@
+import { cartContext } from '../lib/server/cart-context.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
@@ -37,7 +38,7 @@ function fixture(t) {
     limits: serviceLimits({ limiter: () => limiter, config: () => ({ secret }) }), logger: value => logs.push(value) };
   const api = commerceHandlers(options);
   const request = (path, method = 'GET', body, member = members[0], headers = {}) => new Request(origin + path, {
-    method, headers: { origin, ...(member ? { cookie: `${SESSION_COOKIE}=${member.token}` } : {}),
+    method, headers: { origin, ...(member ? { 'x-ryde-cart-context': cartContext(member.owner) } : {}), ...(member ? { cookie: `${SESSION_COOKIE}=${member.token}` } : {}),
       'content-type': 'application/json', ...headers }, ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
   const fill = async () => {
     const r = await api.replaceCart(request('/api/cart', 'PUT', { expectedVersion: 0, items: [{ sku: 'thali', quantity: 2 }] }));
@@ -79,7 +80,7 @@ test('bounded cart JSON rejects nested price injection, quantity errors and malf
     assert.ok([400, 409].includes(r.status));
   }
   assert.equal((await f.api.replaceCart(f.request('/api/cart', 'PUT', { expectedVersion: 0, items: [], extra: 'a'.repeat(9000) }))).status, 400);
-  assert.equal((await f.api.replaceCart(new Request(origin + '/api/cart', { method: 'PUT', headers: { origin, cookie: `${SESSION_COOKIE}=${f.members[0].token}`, 'content-type': 'application/json' }, body: '{' }))).status, 400);
+  assert.equal((await f.api.replaceCart(new Request(origin + '/api/cart', { method: 'PUT', headers: { origin, 'x-ryde-cart-context': cartContext(f.members[0].owner), cookie: `${SESSION_COOKIE}=${f.members[0].token}`, 'content-type': 'application/json' }, body: '{' }))).status, 400);
   assert.equal(f.db.readCart(f.members[0].owner).version, 0);
 });
 test('draft APIs require current server quote and persist idempotent owner-only snapshots', async t => {
