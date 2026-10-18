@@ -17,3 +17,10 @@ No request body, JWT, password, PNR, payment credential, SMS code or passenger d
 
 
 Native `/api/v1/auth` POST routes use accountHandlers' exact Origin and Sec-Fetch-Site checks, including sign-in and logout. GET session is read-only. Code redemption is POST JSON, never a GET link or query token. The CSRF route inventory includes all seven mutations; HTTP auth tests verify cross-origin rejection.
+
+
+## Commerce mutations
+`PUT /api/cart` and `POST /api/orders/drafts` require a verified native account,
+exact Origin and same-origin Fetch-Metadata (when present), bounded exact JSON,
+and shared Redis request/owner limits. Legacy tracking JWTs cannot authorize
+commerce. GET cart/quote/draft responses are private and never cached.

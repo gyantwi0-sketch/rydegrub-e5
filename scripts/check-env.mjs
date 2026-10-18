@@ -1,3 +1,4 @@
+import { commerceConfig } from '../lib/server/commerce-http.mjs';
 import { serviceLimitConfig } from '../lib/server/service-limits.mjs';
 import { accountConfig } from '../lib/server/account-http.mjs';
 import { RedisLimiter } from '../lib/server/rate-limit.mjs';
@@ -37,6 +38,7 @@ export function checkEnvironment(env = process.env) {
       throw new Error('Catalog service is not configured.');
   }
   if (env.DOMAIN_DATA_DIR !== undefined) {
+    if (env.ACCOUNT_APP_ORIGIN) commerceConfig(env);
     if (typeof env.DOMAIN_DATA_DIR !== 'string' || !isAbsolute(env.DOMAIN_DATA_DIR))
       throw new Error('Domain service storage must use a private absolute directory.');
   }
@@ -53,4 +55,5 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     process.exitCode = 1;
   }
 }
+
 
