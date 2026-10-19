@@ -28,7 +28,7 @@ jobs:
       - name: Verify dependency SBOM
         run: node scripts/verify-sbom.mjs sbom.cdx.json
       - name: Retain SBOM for security review
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dependency-sbom
           path: sbom.cdx.json
