@@ -13,8 +13,8 @@ const directives = (policy) => new Map(policy.split("; ").map((entry) => {
 test("Next.js document CSP uses a strict unpredictable script nonce and no inline bypass", () => {
   const first = randomBytes(16).toString("base64");
   const second = randomBytes(16).toString("base64");
-  const p1 = documentCsp(first);
-  const p2 = documentCsp(second);
+  const p1 = documentCsp(first, false, "");
+  const p2 = documentCsp(second, false, "");
   assert.notEqual(first, second);
   assert.notEqual(p1, p2);
   const d = directives(p1);
@@ -33,13 +33,32 @@ test("Next.js document CSP uses a strict unpredictable script nonce and no inlin
 });
 test("development CSP enables eval only for Next hot reload; static routes disallow inline scripts", () => {
   const nonce = randomBytes(16).toString("base64");
-  const dev = directives(documentCsp(nonce, true));
+  const dev = directives(documentCsp(nonce, true, ""));
   assert.match(dev.get("script-src"), /'unsafe-eval'/);
   assert.ok(!dev.has("upgrade-insecure-requests"));
   const fallback = directives(staticCsp);
   assert.equal(fallback.get("script-src"), "'self'");
   assert.equal(fallback.get("frame-ancestors"), "'none'");
 });
+test("Firebase sign-in may frame only the configured trusted HTTPS auth helper", () => {
+  const nonce = randomBytes(16).toString("base64");
+  const configured = directives(documentCsp(nonce, false, "RydeGrub.firebaseapp.com"));
+  assert.equal(configured.get("frame-src"), "https://rydegrub.firebaseapp.com");
+  const custom = directives(documentCsp(nonce, false, "login.rydegrub.example"));
+  assert.equal(custom.get("frame-src"), "https://login.rydegrub.example");
+  for (const invalid of [
+    "",
+    "*.firebaseapp.com",
+    "https://rydegrub.firebaseapp.com",
+    "rydegrub.firebaseapp.com/path",
+    "rydegrub.firebaseapp.com:443",
+    "bad..example.com",
+    "localhost",
+  ]) {
+    assert.equal(directives(documentCsp(nonce, false, invalid)).get("frame-src"), "'none'");
+  }
+});
+
 test("all routes get clickjacking, secure transport and cross-origin protections", async () => {
   const global = (await config.headers()).find((rule) => rule.source === "/:path*");
   assert.ok(global);
@@ -47,7 +66,7 @@ test("all routes get clickjacking, secure transport and cross-origin protections
   assert.equal(h["x-frame-options"], "DENY");
   assert.equal(h["x-content-type-options"], "nosniff");
   assert.equal(h["strict-transport-security"], "max-age=63072000");
-  assert.equal(h["cross-origin-opener-policy"], "same-origin");
+  assert.equal(h["cross-origin-opener-policy"], "same-origin-allow-popups");
   assert.equal(h["cross-origin-resource-policy"], "same-origin");
   assert.equal(h["permissions-policy"], "camera=(), microphone=(), geolocation=()");
   assert.equal(h["content-security-policy"], staticCsp);
