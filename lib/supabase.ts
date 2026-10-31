@@ -26,7 +26,7 @@ export function getSupabaseClient(): SupabaseClient | null {
   if (!isSupabaseConfigured()) return null;
   if (!browserClient) {
     browserClient = createClient(supabaseUrl!, supabasePublishableKey!, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: "pkce" },
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: "implicit" },
     });
   }
   return browserClient;
