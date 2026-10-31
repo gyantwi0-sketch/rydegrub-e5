@@ -13,3 +13,5 @@ overrides:
 
 allowBuilds:
   unrs-resolver: false
+  '@firebase/util': false
+  protobufjs: false

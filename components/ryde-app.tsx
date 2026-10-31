@@ -23,9 +23,11 @@ import {
   Baby,
   Apple,
   LogIn,
+  LogOut,
 } from "lucide-react";
 import { MealSuggestions } from "./personalization";
 import { SignInPage, SignUpPage } from "./auth-forms";
+import { useFirebaseAuth } from "./firebase-auth-provider";
 import {
   totals,
   money,
@@ -71,7 +73,8 @@ const categoryIcons = [
   Apple,
 ];
 function App() {
-  const { state, ready, notice, products, catalogMode } = useRyde();
+  const { state, ready, notice, products, catalogMode, notify } = useRyde();
+  const { user, logOut: firebaseSignOut } = useFirebaseAuth();
   const [page, setPage] = useState<PageName>("home");
   const [orderId, setOrderId] = useState("");
   const [product, setProduct] = useState<Product | null>(null);
@@ -141,17 +144,61 @@ function App() {
               <i />
               Demo mode
             </span>
-            <button
-              className={cn(
-                "header-signin",
-                ["signin", "signup"].includes(page) && "active",
-              )}
-              onClick={() => navigate("signin")}
-              aria-label="Sign in"
-            >
-              <LogIn size={17} />
-              <span>Sign in</span>
-            </button>
+            {user ? (
+              <div className="header-user-menu">
+                <button
+                  type="button"
+                  className={cn(
+                    "header-user-btn",
+                    page === "profile" && "active",
+                  )}
+                  onClick={() => navigate("profile")}
+                  aria-label={`Signed in as ${user.displayName || user.email || "User"}`}
+                  title="View Profile"
+                >
+                  {user.photoURL ? (
+                    <img
+                      src={user.photoURL}
+                      alt={user.displayName || "Avatar"}
+                      className="header-avatar-img"
+                    />
+                  ) : (
+                    <span className="header-avatar-initial">
+                      {(user.displayName || user.email || "U")[0].toUpperCase()}
+                    </span>
+                  )}
+                  <span className="header-user-name">
+                    {user.displayName?.split(" ")[0] || user.email?.split("@")[0] || "Account"}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="header-signout-btn"
+                  onClick={async () => {
+                    await firebaseSignOut();
+                    notify("Signed out from Firebase.");
+                    navigate("home");
+                  }}
+                  aria-label="Sign out of Firebase"
+                  title="Sign out"
+                >
+                  <LogOut size={15} />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className={cn(
+                  "header-signin",
+                  ["signin", "signup"].includes(page) && "active",
+                )}
+                onClick={() => navigate("signin")}
+                aria-label="Sign in"
+              >
+                <LogIn size={17} />
+                <span>Sign in</span>
+              </button>
+            )}
             <button
               className="header-cart"
               onClick={() => navigate("cart")}
@@ -192,7 +239,7 @@ function App() {
           <DemoTrackingPage id={orderId} navigate={navigate} />
         )}
         {page === "orders" && <OrdersPage navigate={navigate} />}
-        {page === "profile" && <ProfilePage />}
+        {page === "profile" && <ProfilePage navigate={navigate} />}
         {page === "signin" && <SignInPage navigate={navigate} />}
         {page === "signup" && <SignUpPage navigate={navigate} />}
       </main>

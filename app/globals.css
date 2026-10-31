@@ -2902,3 +2902,347 @@
     padding: 20px 16px;
   }
 }
+
+/* Firebase Authentication UI */
+.header-user-menu {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.header-user-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #101c2e;
+  border: 1px solid #22354f;
+  border-radius: 20px;
+  padding: 4px 12px 4px 5px;
+  color: #e2e8f0;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+.header-user-btn:hover,
+.header-user-btn.active {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+.header-avatar-img {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--cyan);
+}
+.header-avatar-initial {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--cyan);
+  color: #07111f;
+  font-weight: 700;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.header-user-name {
+  font-weight: 500;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.header-signout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #101c2e;
+  border: 1px solid #22354f;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.header-signout-btn:hover {
+  color: #f87171;
+  border-color: #f87171;
+}
+
+.google-auth-wrapper {
+  width: 100%;
+  margin-bottom: 6px;
+}
+.auth-google-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #131f30;
+  border: 1px solid #283e58;
+  border-radius: 10px;
+  color: #f1f5f9;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 11px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.auth-google-btn:hover:not(:disabled) {
+  background: #1d2f47;
+  border-color: var(--cyan);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+.auth-google-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.google-icon {
+  flex-shrink: 0;
+}
+
+.auth-firebase-user {
+  background: #0d1a29;
+  border: 1px solid #1e334d;
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.auth-firebase-user-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.auth-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--cyan);
+}
+.auth-avatar-fallback {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--cyan);
+  color: #07111f;
+  font-weight: 700;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.auth-firebase-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.auth-firebase-user-info strong {
+  font-size: 16px;
+  color: #f8fafc;
+}
+.auth-email {
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.auth-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  padding: 2px 8px;
+  border-radius: 12px;
+  width: fit-content;
+  margin-top: 4px;
+}
+.auth-firebase-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.auth-signout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.firebase-setup-banner {
+  margin-bottom: 16px;
+  background: #1c1810;
+  border: 1px solid #4a3b1a;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #fbbf24;
+}
+.firebase-setup-banner summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+.firebase-setup-content {
+  margin-top: 10px;
+  color: #cbd5e1;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.firebase-setup-content ol {
+  padding-left: 18px;
+  margin: 8px 0;
+}
+.firebase-setup-content a {
+  color: var(--cyan);
+  text-decoration: underline;
+}
+.firebase-setup-code {
+  background: #091018;
+  border: 1px solid #1a2736;
+  border-radius: 6px;
+  padding: 10px;
+  font-family: monospace;
+  font-size: 11px;
+  color: #7dd3fc;
+  overflow-x: auto;
+  white-space: pre;
+  margin-top: 6px;
+}
+
+.auth-reset-container {
+  margin-top: 14px;
+  text-align: center;
+}
+.auth-reset-toggle {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.15s ease;
+}
+.auth-reset-toggle:hover {
+  color: var(--cyan);
+}
+.auth-reset-form {
+  margin-top: 10px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #0d1a29;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid #1e334d;
+}
+.auth-reset-submit {
+  width: 100%;
+}
+.auth-reset-status {
+  font-size: 12px;
+  color: var(--cyan);
+  margin-top: 4px;
+}
+
+.firebase-profile-panel {
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.firebase-profile-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.firebase-profile-img {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--cyan);
+}
+.firebase-profile-initial {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--cyan);
+  color: #07111f;
+  font-size: 22px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.firebase-profile-details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.firebase-profile-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.firebase-profile-title-row h3 {
+  font-size: 18px;
+  margin: 0;
+  font-weight: 700;
+}
+.firebase-profile-email {
+  color: var(--muted-foreground);
+  font-size: 13px;
+  margin: 0;
+}
+.firebase-profile-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+.firebase-profile-meta code {
+  background: #0d1b2a;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+.firebase-profile-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+.firebase-profile-promo {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.firebase-promo-icon {
+  color: var(--cyan);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.firebase-profile-promo h3 {
+  font-size: 16px;
+  margin: 0 0 4px 0;
+  font-weight: 600;
+}
+.firebase-profile-promo p {
+  font-size: 13px;
+  color: var(--muted-foreground);
+  margin: 0;
+  line-height: 1.5;
+}
