@@ -35,7 +35,7 @@ export function FormField({
   inputRef,
 }: {
   label: string;
-  name: string;
+  name?: string;
   value: string;
   onChange: (value: string) => void;
   error?: string;
@@ -264,6 +264,7 @@ function PasswordResetBox() {
         <form onSubmit={handleReset} className="auth-reset-form">
           <FormField
             label="Email for reset link"
+            name="resetEmail"
             type="email"
             value={resetEmail}
             onChange={setResetEmail}
