@@ -2,7 +2,7 @@ import { Analytics } from "@vercel/analytics/next";
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import { headers } from "next/headers";
-import { FirebaseAuthProvider } from "@/components/firebase-auth-provider";
+import { SupabaseAuthProvider } from "@/components/supabase-auth-provider";
 import "./globals.css";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
@@ -46,9 +46,9 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={`${geist.variable} antialiased`}>
-        <FirebaseAuthProvider>
+        <SupabaseAuthProvider>
           {children}
-        </FirebaseAuthProvider>
+        </SupabaseAuthProvider>
         {process.env.NODE_ENV === "production" && <Analytics />}
       </body>
     </html>

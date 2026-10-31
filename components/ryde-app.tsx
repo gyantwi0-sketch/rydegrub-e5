@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { MealSuggestions } from "./personalization";
 import { SignInPage, SignUpPage } from "./auth-forms";
-import { useFirebaseAuth } from "./firebase-auth-provider";
+import { useSupabaseAuth } from "./supabase-auth-provider";
 import {
   totals,
   money,
@@ -74,8 +74,14 @@ const categoryIcons = [
 ];
 function App() {
   const { state, ready, notice, products, catalogMode, notify } = useRyde();
-  const { user, logOut: firebaseSignOut } = useFirebaseAuth();
+  const { user, recoveryMode, logOut } = useSupabaseAuth();
   const [page, setPage] = useState<PageName>("home");
+  useEffect(() => {
+    if (recoveryMode) {
+      setPage("signin");
+      window.location.hash = "signin";
+    }
+  }, [recoveryMode]);
   const [orderId, setOrderId] = useState("");
   const [product, setProduct] = useState<Product | null>(null);
   const [category, setCategory] = useState("All");
@@ -175,11 +181,11 @@ function App() {
                   type="button"
                   className="header-signout-btn"
                   onClick={async () => {
-                    await firebaseSignOut();
-                    notify("Signed out from Firebase.");
+                    await logOut();
+                    notify("Signed out.");
                     navigate("home");
                   }}
-                  aria-label="Sign out of Firebase"
+                  aria-label="Sign out"
                   title="Sign out"
                 >
                   <LogOut size={15} />

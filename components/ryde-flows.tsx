@@ -24,7 +24,7 @@ import {
   type Order,
 } from "@/lib/rydegrub";
 import { useRyde } from "./ryde-store";
-import { useFirebaseAuth } from "./firebase-auth-provider";
+import { useSupabaseAuth } from "./supabase-auth-provider";
 import { EmptyState, FoodImage, Stepper } from "./food-components";
 import type { PageName } from "./ryde-app";
 import { cn } from "@/lib/utils";
@@ -557,8 +557,8 @@ export function OrdersPage({ navigate }: { navigate: Navigate }) {
     </section>
   );
 }
-function FirebaseProfileCard({ navigate }: { navigate?: Navigate }) {
-  const { user, logOut } = useFirebaseAuth();
+function AccountProfileCard({ navigate }: { navigate?: Navigate }) {
+  const { user, logOut } = useSupabaseAuth();
   const { notify } = useRyde();
 
   if (user) {
@@ -580,14 +580,14 @@ function FirebaseProfileCard({ navigate }: { navigate?: Navigate }) {
           </div>
           <div className="firebase-profile-details">
             <div className="firebase-profile-title-row">
-              <h3>{user.displayName || "Firebase Traveller"}</h3>
+              <h3>{user.displayName || "Traveller"}</h3>
               <span className="subtle-pill cyan">
-                <CheckCircle2 size={12} /> {user.emailVerified ? "Verified" : "Firebase Account"}
+                <CheckCircle2 size={12} /> {user.emailVerified ? "Verified email" : "Account"}
               </span>
             </div>
             <p className="firebase-profile-email">{user.email}</p>
             <div className="firebase-profile-meta">
-              <span>Sign-in Provider: <strong>{user.providerData[0]?.providerId === "google.com" ? "Google" : "Email & Password"}</strong></span>
+              <span>Sign-in Provider: <strong>{user.provider === "google" ? "Google" : "Email & Password"}</strong></span>
               <span className="bullet"> · </span>
               <span>UID: <code>{user.uid.slice(0, 10)}…</code></span>
             </div>
@@ -599,10 +599,10 @@ function FirebaseProfileCard({ navigate }: { navigate?: Navigate }) {
             className="secondary"
             onClick={async () => {
               await logOut();
-              notify("Signed out from Firebase.");
+              notify("Signed out.");
             }}
           >
-            <LogOut size={15} /> Sign out of Firebase
+            <LogOut size={15} /> Sign out
           </button>
         </div>
       </div>
@@ -616,7 +616,7 @@ function FirebaseProfileCard({ navigate }: { navigate?: Navigate }) {
           <ShieldCheck size={26} />
         </div>
         <div>
-          <h3>Firebase Authentication</h3>
+          <h3>Your RydeGrub account</h3>
           <p>Sign in with Google or Email to save your passenger profile, order history, and preferences across devices.</p>
         </div>
       </div>
@@ -638,7 +638,7 @@ function FirebaseProfileCard({ navigate }: { navigate?: Navigate }) {
 
 export function ProfilePage({ navigate }: { navigate?: Navigate } = {}) {
   const { state, setState, notify, ready } = useRyde();
-  const { user } = useFirebaseAuth();
+  const { user } = useSupabaseAuth();
   const [name, setName] = useState(state.profile.name);
   const [mobile, setMobile] = useState(state.profile.mobile);
   const [error, setError] = useState("");
@@ -655,7 +655,7 @@ export function ProfilePage({ navigate }: { navigate?: Navigate } = {}) {
         title="A little about you."
         description="Demo contact details last only until refresh. Manage account meal preferences below."
       />
-      <FirebaseProfileCard navigate={navigate} />
+      <AccountProfileCard navigate={navigate} />
       <ProfileMedia />
       <PersonalizationSettings />
       <form

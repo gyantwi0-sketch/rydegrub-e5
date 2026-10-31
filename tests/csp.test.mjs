@@ -40,21 +40,23 @@ test("development CSP enables eval only for Next hot reload; static routes disal
   assert.equal(fallback.get("script-src"), "'self'");
   assert.equal(fallback.get("frame-ancestors"), "'none'");
 });
-test("Firebase sign-in may frame only the configured trusted HTTPS auth helper", () => {
+test("Supabase auth only connects to configured HTTPS origin and cannot frame external pages", () => {
   const nonce = randomBytes(16).toString("base64");
-  const configured = directives(documentCsp(nonce, false, "RydeGrub.firebaseapp.com"));
-  assert.equal(configured.get("frame-src"), "https://rydegrub.firebaseapp.com");
-  const custom = directives(documentCsp(nonce, false, "login.rydegrub.example"));
-  assert.equal(custom.get("frame-src"), "https://login.rydegrub.example");
+  const configured = directives(documentCsp(nonce, false, "https://rydegrub.supabase.co"));
+  assert.match(configured.get("connect-src"), /https:\/\/rydegrub\.supabase\.co/);
+  assert.equal(configured.get("frame-src"), "'none'");
+  const custom = directives(documentCsp(nonce, false, "https://login.example.com"));
+  assert.match(custom.get("connect-src"), /https:\/\/login\.example\.com/);
   for (const invalid of [
     "",
-    "*.firebaseapp.com",
-    "https://rydegrub.firebaseapp.com",
-    "rydegrub.firebaseapp.com/path",
-    "rydegrub.firebaseapp.com:443",
-    "bad..example.com",
-    "localhost",
+    "*.supabase.co",
+    "http://rydegrub.supabase.co",
+    "https://rydegrub.supabase.co/path",
+    "https://rydegrub.supabase.co:8080/path",
+    "https://rydegrub.supabase.co/?next=evil",
+    "javascript:alert(1)",
   ]) {
+    assert.doesNotMatch(directives(documentCsp(nonce, false, invalid)).get("connect-src"), /supabase\.co/);
     assert.equal(directives(documentCsp(nonce, false, invalid)).get("frame-src"), "'none'");
   }
 });
